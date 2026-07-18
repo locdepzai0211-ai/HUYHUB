@@ -1,8 +1,8 @@
 -- =========================================================================
---                     HUY SCRIPT HUB V4.5.8 (PREMIUM EXPANDED)
---       [ĐÚNG YÊU CẦU]: TÁCH BIỆT HOÀN TOÀN TÍNH NĂNG TRONG TAB FARM
---       [GOM NPC]: CHỈ GOM NPC/QUÁI VẬT, TUYỆT ĐỐI KHÔNG GOM PLAYER
---       [GOM PLAYER]: TÍNH NĂNG MỚI THÊM VÀO TAB FARM, CHỈ GOM PLAYER TRONG SV
+--                     HUY SCRIPT HUB V4.6.0 (PREMIUM EXPANDED)
+--       [FIX CHAT TEXT WRAPPED]: SỬA LỖI TIN NHẮN DÀI BỊ MẤT CHỮ - TỰ ĐỘNG XUỐNG DÒNG
+--       [CHAT SERVER NOTIFY]: TỰ ĐỘNG CHÈN THÔNG BÁO KẾT NỐI TỪ BOT KHI KHỞI CHẠY
+--       [FIX INF JUMP]: TÍNH NĂNG NHẢY VÔ HẠN HOẠT ĐỘNG ỔN ĐỊNH KHI RESET
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -38,7 +38,7 @@ _G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.In
 _G.ESP_Player = false; _G.ESP_NPC = false; _G.ESP_Item = false; _G.HitboxAlways = false; _G.HitboxSize = 13; _G.FullBright = false
 _G.AutoE = false; _G.AutoClick = false; _G.KillAura = false; _G.TpToItems = false
 _G.AutoFarmLevel = false; _G.AutoParry = false
-_G.GomPlayer = false; _G.GomNPC = false -- Hai biến chạy độc lập
+_G.GomPlayer = false; _G.GomNPC = false
 _G.ClickDetectorSpam = false; _G.TouchInterestSpam = false; _G.UniversalHitbox = false; _G.UniversalHitboxSize = 25
 _G.PotatoModeEnabled = false; _G.AdminChatCmds = false
 
@@ -47,7 +47,7 @@ local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V4.5.8 🌌"
+toggleBtn.Text = "HUY HUB V4.6.0 🌌"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -78,7 +78,7 @@ Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0.09, 0)
-title.Text = "HUY SCRIPT HUB V4.5.8"
+title.Text = "HUY SCRIPT HUB V4.6.0"
 title.Font = Enum.Font.Arcade
 title.TextSize = 14
 title.TextColor3 = Color3.new(1,1,1)
@@ -251,7 +251,7 @@ end
 local nameLabel = Instance.new("TextLabel", pages["Main 🏠"])
 nameLabel.Size = UDim2.new(1, -6, 0, 42)
 nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.5.8!"
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.0!"
 nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
 Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
@@ -298,7 +298,14 @@ addToggle("Player", "Xuyên Tường (Noclip)", "Noclip", function(state)
         if noclipConnection then noclipConnection:Disconnect() end
     end
 end)
+
+-- NHẢY VÔ HẠN (INF JUMP)
 addToggle("Player", "Nhảy Vô Hạn (Inf Jump)", "InfJump")
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
 
 -- TAB TELEPORT TO.. 📍
 local tpTab = pages["Teleport to.. 📍"]
@@ -348,10 +355,10 @@ addToggle("Visual", "Bật Mở Rộng Hitbox Gốc", "HitboxAlways")
 addSlider("Visual", "Kích cỡ Hitbox Mở Rộng", "HitboxSize", 2, 50)
 addToggle("Visual", "Sáng Màn Hình (FullBright)", "FullBright")
 
--- ==================== TAB FARM (CHUẨN ĐÚNG PHÂN TÁCH YÊU CẦU) ====================
+-- TAB FARM 
 addToggle("Farm", "Auto Farm Level (Thông minh)", "AutoFarmLevel")
-addToggle("Farm", "Gom NPC / Quái Vật (Chỉ NPC)", "GomNPC")       -- Chỉ Gom NPC, không gom Player
-addToggle("Farm", "Gom Toàn Server (Gom Player) 🆕", "GomPlayer") -- Tính năng mới thêm riêng vào Tab Farm
+addToggle("Farm", "Gom NPC / Quái Vật (Chỉ NPC)", "GomNPC")       
+addToggle("Farm", "Gom Toàn Server (Gom Player)", "GomPlayer") 
 addToggle("Farm", "Kill Aura (TP Kill 1s)", "KillAura")
 addToggle("Farm", "Auto Tương Tác (Auto E)", "AutoE")
 addToggle("Farm", "Tự Động Click (Auto Click)", "AutoClick")
@@ -439,13 +446,16 @@ end)
 -- TAB ADMIN CMDS ⚡
 addToggle("Admin Cmds ⚡", "Bật Hệ Thống Lệnh Ẩn (/e Lệnh)", "AdminChatCmds")
 
--- TAB CHAT SERVER 🌐
+-- ==================== TAB CHAT SERVER 🌐 (CẬP NHẬT TỰ ĐỘNG XUỐNG DÒNG THÔNG MINH) ====================
 local chatTab = pages["Chat Server 🌐"]
 local chatLogsScroll = Instance.new("ScrollingFrame", chatTab)
 chatLogsScroll.Size = UDim2.new(1, -6, 0, 175); chatLogsScroll.Position = UDim2.new(0, 3, 0, 5)
 chatLogsScroll.BackgroundColor3 = Color3.fromRGB(30, 15, 5); chatLogsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+chatLogsScroll.ScrollBarThickness = 4
 Instance.new("UICorner", chatLogsScroll).CornerRadius = UDim.new(0.05, 0)
-local chatLayout = Instance.new("UIListLayout", chatLogsScroll); chatLayout.Padding = UDim.new(0, 3)
+
+local chatLayout = Instance.new("UIListLayout", chatLogsScroll)
+chatLayout.Padding = UDim.new(0, 4)
 
 local chatTextBox = Instance.new("TextBox", chatTab)
 chatTextBox.Size = UDim2.new(0, 220, 0, 30); chatTextBox.Position = UDim2.new(0, 3, 0, 185)
@@ -458,14 +468,37 @@ sendChatBtn.Size = UDim2.new(0, 65, 0, 30); sendChatBtn.Position = UDim2.new(0, 
 sendChatBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); sendChatBtn.Text = "GỬI 🚀"; sendChatBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", sendChatBtn).CornerRadius = UDim.new(0.15, 0)
 
+-- [FIXED ALGORITHM]: Hàm tối ưu hóa tự động xuống dòng và tự động co giãn kích thước nhãn tin nhắn
+local function insertChatLog(text, color)
+    local msgLabel = Instance.new("TextLabel", chatLogsScroll)
+    msgLabel.Size = UDim2.new(1, -10, 0, 0) -- Rộng tối đa khung chat, cao mặc định bằng 0 để hệ thống tự tính toán
+    msgLabel.AutomaticSize = Enum.AutomaticSize.Y -- [BỔ SUNG] Tự động giãn chiều cao dựa trên độ dài dòng chữ
+    msgLabel.BackgroundTransparency = 1
+    msgLabel.Text = text
+    msgLabel.TextColor3 = color
+    msgLabel.TextSize = 12
+    msgLabel.Font = Enum.Font.SourceSansBold
+    msgLabel.TextXAlignment = Enum.TextXAlignment.Left
+    msgLabel.TextYAlignment = Enum.TextYAlignment.Top
+    msgLabel.TextWrapped = true -- [QUAN TRỌNG]: Bật tự động xuống dòng khi chạm giới hạn biên của khung chat!
+
+    -- Đợi cập nhật khung hình rồi cuộn mượt xuống cuối log chat
+    task.defer(function()
+        chatLogsScroll.CanvasPosition = Vector2.new(0, math.max(0, chatLogsScroll.AbsoluteCanvasSize.Y - chatLogsScroll.AbsoluteWindowSize.Y))
+    end)
+end
+
 sendChatBtn.MouseButton1Click:Connect(function()
     if chatTextBox.Text ~= "" then
-        local msgLabel = Instance.new("TextLabel", chatLogsScroll)
-        msgLabel.Size = UDim2.new(1, -8, 0, 20); msgLabel.BackgroundTransparency = 1
-        msgLabel.Text = " 🛑 [" .. player.DisplayName .. "]: " .. chatTextBox.Text
-        msgLabel.TextColor3 = Color3.fromRGB(255, 215, 0); msgLabel.TextXAlignment = Enum.TextXAlignment.Left
+        insertChatLog(" 🔴 [" .. player.DisplayName .. "]: " .. chatTextBox.Text, Color3.fromRGB(255, 215, 0))
         chatTextBox.Text = ""
     end
+end)
+
+-- TỰ ĐỘNG HIỆN THÔNG BÁO BOT KHI VỪA KHỞI CHẠY HỆ THỐNG
+task.spawn(function()
+    task.wait(0.5) 
+    insertChatLog(" 📢 [HuyHub Bot]: Hệ thống Chat Server đã kết nối thành công! Chúc bạn tương tác vui vẻ.", Color3.fromRGB(0, 255, 200))
 end)
 
 -- TAB SETTING UI ⚙️
@@ -481,7 +514,7 @@ createSettingBtn("Đổi Chủ Đề Giao Diện 🌱", Color3.fromRGB(34, 139, 
 createSettingBtn("Xóa Toàn Bộ Script Hub ❌", Color3.fromRGB(180, 40, 40), function() gui:Destroy() end)
 
 
--- ==================== CORE LOGIC HOẠT ĐỘNG NGẦM (CHỈNH SỬA CHUẨN XÁC) ====================
+-- ==================== CORE LOGIC HOẠT ĐỘNG NGẦM ====================
 
 local function createESP(obj, color, espKey, nameText)
     if obj:FindFirstChild("HuyESP") then return end
@@ -510,7 +543,7 @@ RunService.RenderStepped:Connect(function()
     if _G.FullBright then Lighting.Ambient = Color3.new(1,1,1); Lighting.OutdoorAmbient = Color3.new(1,1,1) end
 end)
 
--- VÒNG LẶP CHÍNH TẦN SUẤT 50MS XỬ LÝ ĐỘC LẬP TỪNG TÍNH NĂNG
+-- VÒNG LẶP CHÍNH TẦN SUẤT 50MS
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -519,20 +552,20 @@ task.spawn(function()
         local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
         
         if myRoot then
-            local targetCFrame = myRoot.CFrame * CFrame.new(0, 0, -5) -- Tọa độ ép dính trước mặt
+            local targetCFrame = myRoot.CFrame * CFrame.new(0, 0, -5)
 
-            -- 1. TÍNH NĂNG MỚI: GOM PLAYER (CHỈ HÚT NGƯỜI CHƠI KHÁC TRONG SERVER)
+            -- 1. TÍNH NĂNG GOM PLAYER
             if _G.GomPlayer then
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                         local pRoot = p.Character.HumanoidRootPart
-                        pRoot.Velocity = Vector3.new(0,0,0) -- Khóa kháng vật lý
+                        pRoot.Velocity = Vector3.new(0,0,0)
                         pRoot.CFrame = targetCFrame
                     end
                 end
             end
 
-            -- 2. TÍNH NĂNG CŨ: GOM NPC / QUÁI VẬT (CHỈ QUÉT NPC, TUYỆT ĐỐI KHÔNG LIÊN QUAN ĐẾN PLAYER)
+            -- 2. TÍNH NĂNG GOM NPC
             if _G.GomNPC then
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
@@ -545,7 +578,7 @@ task.spawn(function()
                 end
             end
 
-            -- 3. AUTO FARM LEVEL VÀ TP TẤN CÔNG ĐI KÈM
+            -- 3. AUTO FARM LEVEL VÀ KILL AURA
             if _G.AutoFarmLevel or _G.KillAura then
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
@@ -579,7 +612,7 @@ task.spawn(function()
     end
 end)
 
--- VÒNG LẶP VISUAL
+-- VÒNG LẶP HỆ THỐNG VISUAL
 task.spawn(function()
     while true do
         task.wait(1)
@@ -634,11 +667,11 @@ task.spawn(function()
     end
 end)
 
--- Mặc định mở tab Main
+-- Mặc định mở tab Main khi bắt đầu chạy
 task.spawn(function()
     task.wait(0.1)
     for tName, pFrame in pairs(pages) do pFrame.Visible = (tName == "Main 🏠") end
     for _, b in pairs(tabButtons) do if b.Text == "Main 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
 end)
 
-notify("HUY SCRIPT HUB V4.5.8", "Đã phân tách thành công: Gom NPC riêng biệt và thêm nút mới Gom Player vào tab Farm!")
+notify("HUY SCRIPT HUB V4.6.0", "Đã cập nhật tính năng tự động xuống dòng & căn chỉnh giao diện khung chat!")

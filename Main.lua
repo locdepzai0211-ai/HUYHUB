@@ -1,7 +1,7 @@
 -- =========================================================================
---               HUY SCRIPT HUB V4.6.4 (PRIVATE CHAT EDITION)
---       [SECRET CHAT]: CHỈ NGƯỜI DÙNG HUY SCRIPT HUB MỚI THẤY NHAU
---       [BẢO MẬT]: ẨN HOÀN TOÀN KHÔNG ĐẨY TIN NHẮN RA KHUNG CHAT ROBLOX
+--               HUY SCRIPT HUB V4.6.8 (ULTIMATE R6 SCALE)
+--       [SỬA LỖI]: FIX LỌT VOID + FIX ĐI CHẬM NHƯ RÙA KHI THU NHỎ DƯỚI 1.0
+--       [BẢO MẬT]: KHÔNG KẾT NỐI MẠNG NGOÀI, CHẠY SIÊU MƯỢT
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -10,7 +10,6 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local VirtualUser = game:GetService("VirtualUser")
-local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -28,6 +27,7 @@ gui.Parent = pgui
 
 -- Khởi tạo biến cấu hình tính năng
 _G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.InfJump = false
+_G.PlayerScale = 1 
 _G.ESP_Player = false; _G.ESP_NPC = false; _G.ESP_Item = false; _G.HitboxAlways = false; _G.HitboxSize = 13; _G.FullBright = false
 _G.AutoE = false; _G.AutoClick = false; _G.KillAura = false; _G.TpToItems = false
 _G.AutoFarmLevel = false; _G.GomPlayer = false; _G.GomNPC = false
@@ -39,7 +39,7 @@ local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V4.6.4 🌌"
+toggleBtn.Text = "HUY HUB V4.6.8 🌌"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -70,7 +70,7 @@ Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0.09, 0)
-title.Text = "HUY SCRIPT HUB V4.6.4 (PRIVATE CHAT)"
+title.Text = "HUY SCRIPT HUB V4.6.8 (MAX SPEED SCALE)"
 title.Font = Enum.Font.Arcade
 title.TextSize = 13
 title.TextColor3 = Color3.new(1,1,1)
@@ -160,13 +160,11 @@ end
 createTab("Main 🏠")
 createTab("Player")
 createTab("Teleport to.. 📍", true)
-createTab("Combat V3")  
 createTab("Visual")
 createTab("Farm")           
 createTab("Game Dex 🔍", true)       
 createTab("Universal Clicker 🎯")   
 createTab("Potato Mode 🥔")         
-createTab("Chat Kín 🤫", true)   
 createTab("Setting UI ⚙️")  
 
 local function notify(title, text)
@@ -215,7 +213,8 @@ local function addSlider(tabName, text, key, min, max, callback)
     local function updateSlider(input)
         local sizeX = math.clamp((input.Position.X - container.AbsolutePosition.X) / container.AbsoluteSize.X, 0, 1)
         bar.Size = UDim2.new(sizeX, 0, 1, 0)
-        local value = math.floor(min + (sizeX * (max - min)))
+        local value = min + (sizeX * (max - min))
+        value = math.floor(value * 10) / 10
         _G[key] = value
         label.Text = text .. ": " .. tostring(value)
         if callback then pcall(callback, value) end
@@ -237,13 +236,128 @@ end
 local nameLabel = Instance.new("TextLabel", pages["Main 🏠"])
 nameLabel.Size = UDim2.new(1, -6, 0, 42)
 nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.4 Sec Chat!"
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.8!"
 nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
 Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
 -- TAB PLAYER
 addToggle("Player", "Bật Tốc Độ (Speed)", "SpeedEnabled")
 addSlider("Player", "Điều chỉnh Tốc Độ", "Speed", 16, 250)
+
+-- HÀM SCALE GỘP HOÀN CHỈNH V4.6.8: CHỐNG RƠI VOID + BỎ MA SÁT KHI THU NHỎ
+local function changePlayerScale(scaleValue)
+    pcall(function()
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+
+        -- 1. Xử lý cho hệ thống R15
+        if hum.RigType == Enum.HumanoidRigType.R15 then
+            local bodyHeight = hum:FindFirstChild("BodyHeightScale")
+            local bodyWidth = hum:FindFirstChild("BodyWidthScale")
+            local bodyDepth = hum:FindFirstChild("BodyDepthScale")
+            local headScale = hum:FindFirstChild("HeadScale")
+            
+            if bodyHeight then bodyHeight.Value = scaleValue end
+            if bodyWidth then bodyWidth.Value = scaleValue end
+            if bodyDepth then bodyDepth.Value = scaleValue end
+            if headScale then headScale.Value = scaleValue end
+        
+        -- 2. Xử lý tối ưu R6 (Chống lọt void + Xóa ma sát)
+        elseif hum.RigType == Enum.HumanoidRigType.R6 then
+            local rootPart = char:FindFirstChild("HumanoidRootPart")
+            if not rootPart then return end
+
+            local currentCFrame = rootPart.CFrame
+
+            -- Thay đổi kích thước toàn bộ cơ thể
+            for _, part in pairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    if not part:FindFirstChild("OriginalSize") then
+                        local originalSize = Instance.new("Vector3Value", part)
+                        originalSize.Name = "OriginalSize"
+                        originalSize.Value = part.Size
+                    end
+                    
+                    part.Size = part.OriginalSize.Value * scaleValue
+                    
+                    -- THUẬT TOÁN ĐIỀU CHỈNH VA CHẠM & KHỬ MA SÁT:
+                    if part.Name ~= "HumanoidRootPart" then
+                        if scaleValue < 1.0 then
+                            part.CanCollide = true
+                            -- Biến các bộ phận thành vật liệu siêu trơn (Friction = 0) để chạy bốc đầu
+                            part.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0, 0.5, 1, 1)
+                        else
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+
+            -- Đồng bộ khoảng cách các khớp nối Motor6D
+            for _, motor in pairs(char:GetDescendants()) do
+                if motor:IsA("Motor6D") then
+                    if not motor:FindFirstChild("OriginalC0") then
+                        local origC0 = Instance.new("CFrameValue", motor)
+                        origC0.Name = "OriginalC0"
+                        origC0.Value = motor.C0
+                    end
+                    if not motor:FindFirstChild("OriginalC1") then
+                        local origC1 = Instance.new("CFrameValue", motor)
+                        origC1.Name = "OriginalC1"
+                        origC1.Value = motor.C1
+                    end
+                    
+                    motor.C0 = motor.OriginalC0.Value + (motor.OriginalC0.Value.Position * (scaleValue - 1))
+                    motor.C1 = motor.OriginalC1.Value + (motor.OriginalC1.Value.Position * (scaleValue - 1))
+                end
+            end
+            
+            -- Tính toán lại độ cao HipHeight phù hợp
+            if scaleValue < 1.0 then
+                hum.HipHeight = math.max(0, (scaleValue - 1) * 0.5)
+            else
+                hum.HipHeight = (scaleValue - 1) * 2
+            end
+
+            -- Nhấc nhẹ nhân vật để tránh kẹt đất ban đầu
+            rootPart.CFrame = currentCFrame * CFrame.new(0, 1, 0)
+        end
+    end)
+end
+
+-- Vòng lặp khóa cứng va chạm + ép ma sát bằng 0 liên tục ngầm
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        pcall(function()
+            if player.Character then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        if _G.PlayerScale < 1.0 then
+                            part.CanCollide = true
+                            part.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0, 0.5, 1, 1)
+                        else
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Thanh kéo chỉnh kích cỡ R6/R15
+addSlider("Player", "Kích Thước Thân Thể 🧍", "PlayerScale", 0.4, 5, function(value)
+    changePlayerScale(value)
+end)
+
+player.CharacterAdded:Connect(function(char)
+    task.wait(1.5)
+    if _G.PlayerScale ~= 1 then changePlayerScale(_G.PlayerScale) end
+end)
+
 
 local flySpeed = 50
 local flyingConnection
@@ -425,113 +539,6 @@ addToggle("Potato Mode 🥔", "Kích Hoạt Potato Siêu Mượt Máy", "PotatoM
     end
 end)
 
-
--- ==================== HỆ THỐNG PHÒNG CHAT KÍN CLOUD (PRIVATE CHAT ENGINE) ====================
-
-local chatTab = pages["Chat Kín 🤫"]
-local chatLogsScroll = Instance.new("ScrollingFrame", chatTab)
-chatLogsScroll.Size = UDim2.new(1, -6, 0, 175); chatLogsScroll.Position = UDim2.new(0, 3, 0, 5)
-chatLogsScroll.BackgroundColor3 = Color3.fromRGB(30, 15, 5); chatLogsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-chatLogsScroll.ScrollBarThickness = 4; Instance.new("UICorner", chatLogsScroll).CornerRadius = UDim.new(0.05, 0)
-
-local chatLayout = Instance.new("UIListLayout", chatLogsScroll); chatLayout.Padding = UDim.new(0, 4)
-
-local chatTextBox = Instance.new("TextBox", chatTab)
-chatTextBox.Size = UDim2.new(0, 220, 0, 30); chatTextBox.Position = UDim2.new(0, 3, 0, 185)
-chatTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50); chatTextBox.TextColor3 = Color3.new(1, 1, 1)
-chatTextBox.PlaceholderText = " Nhập tin nhắn bí mật..."; chatTextBox.Text = ""
-Instance.new("UICorner", chatTextBox).CornerRadius = UDim.new(0.15, 0)
-
-local sendChatBtn = Instance.new("TextButton", chatTab)
-sendChatBtn.Size = UDim2.new(0, 65, 0, 30); sendChatBtn.Position = UDim2.new(0, 227, 0, 185)
-sendChatBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); sendChatBtn.Text = "KÍN 🤫"; sendChatBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", sendChatBtn).CornerRadius = UDim.new(0.15, 0)
-
-local function insertChatLog(text, color)
-    pcall(function()
-        local msgLabel = Instance.new("TextLabel", chatLogsScroll)
-        msgLabel.Size = UDim2.new(1, -10, 0, 0); msgLabel.AutomaticSize = Enum.AutomaticSize.Y 
-        msgLabel.BackgroundTransparency = 1; msgLabel.Text = text; msgLabel.TextColor3 = color
-        msgLabel.TextSize = 12; msgLabel.Font = Enum.Font.SourceSansBold
-        msgLabel.TextXAlignment = Enum.TextXAlignment.Left; msgLabel.TextYAlignment = Enum.TextYAlignment.Top; msgLabel.TextWrapped = true 
-        task.defer(function()
-            chatLogsScroll.CanvasPosition = Vector2.new(0, math.max(0, chatLogsScroll.AbsoluteCanvasSize.Y - chatLogsScroll.AbsoluteWindowSize.Y))
-        end)
-    end)
-end
-
--- URL MẠNG TRUNG GIAN (Sử dụng Mockbin/Pastebin API mô phỏng phòng chat đồng bộ thời gian thực cho Hub)
--- Hệ thống này tự gửi nhận chuỗi JSON mã hóa độc lập hoàn toàn với máy chủ Roblox!
-local CHAT_CHANNEL_URL = "https://api.jsonbin.io/v3/b/66eb8adce41b4d34e432a5a5" -- Kênh công cộng mã hóa dành riêng cho HuyHub
-local lastMessageTimestamp = 0
-
-local function sendPrivateHubChat(msg)
-    task.spawn(function()
-        pcall(function()
-            -- Sử dụng request mạng của Executor (request / http.request) để bypass hệ thống Roblox
-            local requestFunc = syn and syn.request or http and http.request or request or fluxus and fluxus.request
-            if requestFunc then
-                local rawData = {
-                    sender = player.DisplayName,
-                    content = msg,
-                    time = os.time()
-                }
-                requestFunc({
-                    Url = CHAT_CHANNEL_URL,
-                    Method = "POST",
-                    Headers = {
-                        ["Content-Type"] = "application/json",
-                        ["X-Master-Key"] = "$2a$10$ExampleFakeKeyJustForStructure" -- Đoạn mã định danh mạng
-                    },
-                    Body = HttpService:JSONEncode(rawData)
-                })
-            else
-                -- Phương thức dự phòng an toàn cục bộ nếu Executor không có quyền mạng bên ngoài
-                -- Sẽ giả lập đồng bộ hóa p2p thông qua StringValue ẩn trong CoreGui
-                local secureFolder = game:GetService("CoreGui"):FindFirstChild("HuyPrivateData")
-                if not secureFolder then
-                    secureFolder = Instance.new("Folder", game:GetService("CoreGui"))
-                    secureFolder.Name = "HuyPrivateData"
-                end
-                local packet = Instance.new("StringValue", secureFolder)
-                packet.Name = "MsgPacket"
-                packet.Value = HttpService:JSONEncode({sender = player.DisplayName, content = msg, ts = os.time()})
-                game:GetService("Debris"):AddItem(packet, 5)
-            end
-        end)
-    end)
-end
-
--- Lắng nghe nhận tin nhắn độc quyền từ các người dùng HuyHub khác trong cùng server
-pcall(function()
-    local secureFolder = game:GetService("CoreGui"):WaitForChild("HuyPrivateData", 2) or game:GetService("CoreGui")
-    secureFolder.ChildAdded:Connect(function(child)
-        if child.Name == "MsgPacket" and child:IsA("StringValue") then
-            pcall(function()
-                local data = HttpService:JSONDecode(child.Value)
-                if data and data.sender ~= player.DisplayName then
-                    insertChatLog(" 🔒 [" .. data.sender .. "]: " .. data.content, Color3.fromRGB(0, 220, 255))
-                end
-             pcall(function() child:Destroy() end)
-            end)
-        end
-    end)
-end)
-
-sendChatBtn.MouseButton1Click:Connect(function()
-    local text = chatTextBox.Text
-    if text ~= "" then
-        -- Ghi log lên giao diện của chính mình trước
-        insertChatLog(" 🛡️ [Bạn]: " .. text, Color3.fromRGB(255, 215, 0))
-        -- Gửi kín đi
-        sendPrivateHubChat(text)
-        chatTextBox.Text = ""
-    end
-end)
-
-insertChatLog(" 🔒 [HuyHub]: Đã kích hoạt hệ thống Chat Kín Cloud. Người dùng không chạy script sẽ KHÔNG THỂ THẤY tin nhắn này!", Color3.fromRGB(0, 255, 150))
-
-
 -- ==================== CORE LOGIC HOẠT ĐỘNG NGẦM VÀ VISUAL ====================
 
 local function createESP(obj, color, espKey, nameText)
@@ -691,4 +698,4 @@ end
 createSettingBtn("Đổi Chủ Đề Giao Diện 🌱", Color3.fromRGB(34, 139, 34), function() main.BackgroundColor3 = Color3.fromRGB(20, 50, 20) end)
 createSettingBtn("Xóa Toàn Bộ Script Hub ❌", Color3.fromRGB(180, 40, 40), function() gui:Destroy() end)
 
-notify("HUY SCRIPT HUB V4.6.4", "Hệ thống Chat Mật Độc Quyền đã sẵn sàng!")
+notify("HUY SCRIPT HUB V4.6.8", "Đã gộp hoàn chỉnh hệ thống tối ưu tốc độ thu nhỏ!")

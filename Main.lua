@@ -1,7 +1,8 @@
 -- =========================================================================
---                     HUY SCRIPT HUB V4.4.6 (THE ULTIMATE VERSION)
---       [SỬA LỖI]: KHÔI PHỤC TOÀN BỘ TẤT CẢ TÍNH NĂNG HACK + GIỮ KHUNG CHAT XỊN
---       [TRẠNG THÁI]: HOÀN CHỈNH 100% - KHÔNG CÒN LỖI LẦM
+--                     HUY SCRIPT HUB V4.5.8 (PREMIUM EXPANDED)
+--       [ĐÚNG YÊU CẦU]: TÁCH BIỆT HOÀN TOÀN TÍNH NĂNG TRONG TAB FARM
+--       [GOM NPC]: CHỈ GOM NPC/QUÁI VẬT, TUYỆT ĐỐI KHÔNG GOM PLAYER
+--       [GOM PLAYER]: TÍNH NĂNG MỚI THÊM VÀO TAB FARM, CHỈ GOM PLAYER TRONG SV
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -10,21 +11,11 @@ local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
-local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
-
--- HỆ THỐNG BACKUP MAP AN TOÀN
-local MapBackup = {}
-task.spawn(function()
-    for _, child in pairs(workspace:GetChildren()) do
-        if not Players:GetPlayerFromCharacter(child) and child ~= camera and not child:IsA("Terrain") then
-            pcall(function() MapBackup[child.Name] = child:Clone() end)
-        end
-    end
-end)
 
 local pgui = nil
 local success_gui = pcall(function()
@@ -34,7 +25,7 @@ local success_gui = pcall(function()
 end)
 if not pgui or not success_gui then pgui = player:WaitForChild("PlayerGui") end
 
--- DỌN SẠCH BẢN CŨ V4.4.5
+-- LÀM SẠCH BẢN CŨ TRÁNH XUNG ĐỘT GIAO DIỆN
 if pgui:FindFirstChild("HuyScriptHubV2") then pgui.HuyScriptHubV2:Destroy() end
 
 local gui = Instance.new("ScreenGui")
@@ -42,12 +33,21 @@ gui.Name = "HuyScriptHubV2"
 gui.ResetOnSpawn = false
 gui.Parent = pgui
 
--- Nút mở Menu
+-- KHỞI TẠO BIẾN TOÀN CỤC CHẠY TÍNH NĂNG
+_G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.InfJump = false
+_G.ESP_Player = false; _G.ESP_NPC = false; _G.ESP_Item = false; _G.HitboxAlways = false; _G.HitboxSize = 13; _G.FullBright = false
+_G.AutoE = false; _G.AutoClick = false; _G.KillAura = false; _G.TpToItems = false
+_G.AutoFarmLevel = false; _G.AutoParry = false
+_G.GomPlayer = false; _G.GomNPC = false -- Hai biến chạy độc lập
+_G.ClickDetectorSpam = false; _G.TouchInterestSpam = false; _G.UniversalHitbox = false; _G.UniversalHitboxSize = 25
+_G.PotatoModeEnabled = false; _G.AdminChatCmds = false
+
+-- Nút mở Menu chính
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V4.4.6 🌌"
+toggleBtn.Text = "HUY HUB V4.5.8 🌌"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -60,10 +60,10 @@ toggleGrass.BorderSizePixel = 0
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0.2, 0)
 Instance.new("UICorner", toggleGrass).CornerRadius = UDim.new(0.2, 0)
 
--- Khung menu chính
-local main = Instance.new("CanvasGroup", gui)
-main.Size = UDim2.new(0, 390, 0, 280) 
-main.Position = UDim2.new(0.5, -195, 0.5, -140)
+-- Khung nền chính của Menu
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 430, 0, 300) 
+main.Position = UDim2.new(0.5, -215, 0.5, -150)
 main.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
 main.Visible = false
 main.Active = true
@@ -71,14 +71,14 @@ main.ClipsDescendants = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0.05, 0)
 
 local mainGrass = Instance.new("Frame", main)
-mainGrass.Size = UDim2.new(1, 0, 0.1, 0)
+mainGrass.Size = UDim2.new(1, 0, 0.09, 0)
 mainGrass.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
 mainGrass.BorderSizePixel = 0
 Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0.1, 0)
-title.Text = "HUY SCRIPT HUB V4.4.6"
+title.Size = UDim2.new(1, 0, 0.09, 0)
+title.Text = "HUY SCRIPT HUB V4.5.8"
 title.Font = Enum.Font.Arcade
 title.TextSize = 14
 title.TextColor3 = Color3.new(1,1,1)
@@ -112,39 +112,24 @@ local function makeDraggable(frame)
 end
 makeDraggable(toggleBtn) makeDraggable(main)
 
--- ANIMATION ĐÓNG / MỞ MENU
-local isTweening = false
-local currentScale = Instance.new("UIScale", main)
-local function toggleMenu()
-    if isTweening then return end isTweening = true
-    if not main.Visible then
-        main.Visible = true main.GroupTransparency = 1 currentScale.Scale = 0.7
-        TweenService:Create(currentScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-        local t = TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
-        t:Play() t.Completed:Connect(function() isTweening = false end)
-    else
-        TweenService:Create(currentScale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.7}):Play()
-        local t = TweenService:Create(main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
-        t:Play() t.Completed:Connect(function() main.Visible = false isTweening = false end)
-    end
-end
+local function toggleMenu() main.Visible = not main.Visible end
 toggleBtn.MouseButton1Click:Connect(toggleMenu) closeBtn.MouseButton1Click:Connect(toggleMenu)
 
--- KHU VỰC TAB
+-- PHÂN CHIA HỆ THỐNG CÁC TAB CHỨC NĂNG
 local tabButtonsFrame = Instance.new("ScrollingFrame", main)
-tabButtonsFrame.Size = UDim2.new(0, 110, 0.82, -5)
-tabButtonsFrame.Position = UDim2.new(0, 5, 0.15, 0)
+tabButtonsFrame.Size = UDim2.new(0, 115, 0.85, -5)
+tabButtonsFrame.Position = UDim2.new(0, 5, 0.13, 0)
 tabButtonsFrame.BackgroundTransparency = 1
 tabButtonsFrame.ScrollBarThickness = 0
 tabButtonsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
 local pagesFrame = Instance.new("Frame", main)
-pagesFrame.Size = UDim2.new(0, 265, 0.85, -5)
-pagesFrame.Position = UDim2.new(0, 120, 0.15, 0)
+pagesFrame.Size = UDim2.new(0, 295, 0.85, -5)
+pagesFrame.Position = UDim2.new(0, 125, 0.13, 0)
 pagesFrame.BackgroundTransparency = 1
 
 local tabLayout = Instance.new("UIListLayout", tabButtonsFrame)
-tabLayout.Padding = UDim.new(0, 5)
+tabLayout.Padding = UDim.new(0, 4)
 
 local pages = {}
 local tabButtons = {}
@@ -162,42 +147,35 @@ local function createTab(tabName, isCustomLayout)
     pages[tabName] = p
     
     local btn = Instance.new("TextButton", tabButtonsFrame)
-    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.Size = UDim2.new(1, 0, 0, 28)
     btn.Text = tabName
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
     btn.TextColor3 = Color3.new(1,1,1)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0.2, 0)
     
     btn.MouseButton1Click:Connect(function()
-        for _, b in pairs(tabButtons) do TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play() end
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(34, 139, 34)}):Play()
-        for tName, pFrame in pairs(pages) do 
-            if tName == tabName then
-                pFrame.Visible = true pFrame.Position = UDim2.new(0, 0, 0, 15)
-                TweenService:Create(pFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-            else pFrame.Visible = false end
-        end
+        for _, b in pairs(tabButtons) do b.BackgroundColor3 = Color3.fromRGB(80, 80, 80) end
+        btn.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+        for tName, pFrame in pairs(pages) do pFrame.Visible = (tName == tabName) end
     end)
     table.insert(tabButtons, btn)
 end
 
--- KHỞI TẠO TẤT CẢ CÁC TAB NHƯ CŨ
+-- TẠO CÁC TAB
 createTab("Main 🏠")
 createTab("Player")
+createTab("Teleport to.. 📍", true)
 createTab("Combat V3")  
 createTab("Visual")
 createTab("Farm")           
-createTab("Chat Server 🌐", true)
+createTab("Game Dex 🔍", true)       
+createTab("Universal Clicker 🎯")   
+createTab("Potato Mode 🥔")         
+createTab("Admin Cmds ⚡")          
+createTab("Chat Server 🌐", true)   
 createTab("Setting UI ⚙️")  
-
--- KHAI BÁO BIẾN HACK FULL TRỞ LẠI
-_G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.InfJump = false
-_G.ESP_Player = false; _G.ESP_NPC = false; _G.ESP_Item = false; _G.HitboxAlways = false; _G.HitboxSize = 10; _G.FullBright = false
-_G.AutoE = false; _G.AutoClick = false; _G.KillAura = false; _G.TpToItems = false; _G.AutoEquip = false
-_G.AutoFarmLevel = false; _G.BringMonsters = false; _G.AutoSkill = false; _G.AutoParry = false
-_G.StreamerMode = false; _G.FPSBooster = false
 
 local function notify(title, text)
     pcall(function() StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 1.5}) end)
@@ -208,7 +186,7 @@ local function addToggle(tabName, text, key, callback)
     local b = Instance.new("TextButton", targetPage)
     b.Size = UDim2.new(1, -6, 0, 32)
     b.Text = text b.Font = Enum.Font.SourceSansBold b.TextSize = 13
-    b.BackgroundColor3 = Color3.fromRGB(50,50,50) b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = _G[key] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50,50,50) b.TextColor3 = Color3.new(1,1,1)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0.2, 0)
     
     b.MouseButton1Click:Connect(function()
@@ -248,7 +226,7 @@ local function addSlider(tabName, text, key, min, max, callback)
     bar.BorderSizePixel = 0
     Instance.new("UICorner", bar).CornerRadius = UDim.new(0.5, 0)
 
-    local function update(input)
+    local function updateSlider(input)
         local sizeX = math.clamp((input.Position.X - container.AbsolutePosition.X) / container.AbsoluteSize.X, 0, 1)
         bar.Size = UDim2.new(sizeX, 0, 1, 0)
         local value = math.floor(min + (sizeX * (max - min)))
@@ -259,26 +237,22 @@ local function addSlider(tabName, text, key, min, max, callback)
 
     local sliding = false
     container.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = true update(input) end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = true updateSlider(input) end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end
+        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then updateSlider(input) end
     end)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = false end
     end)
 end
 
--- ==================== KHÔI PHỤC TOÀN BỘ LOGIC CÁC TAB ====================
-
 -- TAB MAIN
 local nameLabel = Instance.new("TextLabel", pages["Main 🏠"])
 nameLabel.Size = UDim2.new(1, -6, 0, 42)
 nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.4.6 Full!"
-nameLabel.Font = Enum.Font.SourceSansBold
-nameLabel.TextSize = 12
-nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.5.8!"
+nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
 Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
 -- TAB PLAYER
@@ -294,21 +268,13 @@ addToggle("Player", "Bay (Fly)", "Fly", function(state)
     if state then
         hum.PlatformStand = true
         local bv = Instance.new("BodyVelocity", hrp)
-        bv.Name = "FlyVelocity"
-        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bv.Velocity = Vector3.new(0,0,0)
-        
+        bv.Name = "FlyVelocity"; bv.MaxForce = Vector3.new(9e9, 9e9, 9e9); bv.Velocity = Vector3.new(0,0,0)
         local bg = Instance.new("BodyGyro", hrp)
-        bg.Name = "FlyGyro"
-        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.CFrame = hrp.CFrame
-
+        bg.Name = "FlyGyro"; bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9); bg.CFrame = hrp.CFrame
         flyingConnection = RunService.RenderStepped:Connect(function()
-            local moveDir = hum.MoveDirection
             local vel = Vector3.new(0,0,0)
-            if moveDir.Magnitude > 0 then vel = moveDir * flySpeed end
-            bv.Velocity = vel
-            bg.CFrame = camera.CFrame
+            if hum.MoveDirection.Magnitude > 0 then vel = hum.MoveDirection * flySpeed end
+            bv.Velocity = vel; bg.CFrame = camera.CFrame
         end)
     else
         hum.PlatformStand = false
@@ -324,7 +290,7 @@ addToggle("Player", "Xuyên Tường (Noclip)", "Noclip", function(state)
         noclipConnection = RunService.Stepped:Connect(function()
             if player.Character then
                 for _, child in pairs(player.Character:GetDescendants()) do
-                    if child:IsA("BasePart") and child.CanCollide then child.CanCollide = false end
+                    if child:IsA("BasePart") then child.CanCollide = false end
                 end
             end
         end)
@@ -332,376 +298,347 @@ addToggle("Player", "Xuyên Tường (Noclip)", "Noclip", function(state)
         if noclipConnection then noclipConnection:Disconnect() end
     end
 end)
-
 addToggle("Player", "Nhảy Vô Hạn (Inf Jump)", "InfJump")
-UserInputService.JumpRequest:Connect(function()
-    if _G.InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+
+-- TAB TELEPORT TO.. 📍
+local tpTab = pages["Teleport to.. 📍"]
+addToggle("Teleport to.. 📍", "Teleport To Items (Auto)", "TpToItems")
+
+local plTitle = Instance.new("TextLabel", tpTab)
+plTitle.Size = UDim2.new(1, -6, 0, 24); plTitle.Position = UDim2.new(0, 3, 0, 40)
+plTitle.BackgroundColor3 = Color3.fromRGB(34, 139, 34); plTitle.Text = "👤 TELEPORT TO PLAYER:"
+plTitle.Font = Enum.Font.SourceSansBold; plTitle.TextSize = 11; plTitle.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", plTitle).CornerRadius = UDim.new(0.2, 0)
+
+local plScroll = Instance.new("ScrollingFrame", tpTab)
+plScroll.Size = UDim2.new(1, -6, 0, 175); plScroll.Position = UDim2.new(0, 3, 0, 70)
+plScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); plScroll.ScrollBarThickness = 4
+plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UICorner", plScroll).CornerRadius = UDim.new(0.05, 0)
+local plLayout = Instance.new("UIListLayout", plScroll); plLayout.Padding = UDim.new(0, 4)
+
+local function refreshPlayerList()
+    for _, child in pairs(plScroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            local pBtn = Instance.new("TextButton", plScroll)
+            pBtn.Size = UDim2.new(1, -8, 0, 28); pBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            pBtn.TextColor3 = Color3.new(1, 1, 1); pBtn.Font = Enum.Font.SourceSansBold; pBtn.TextSize = 12
+            pBtn.Text = "🏃 " .. p.DisplayName .. " (@" .. p.Name .. ")"
+            Instance.new("UICorner", pBtn).CornerRadius = UDim.new(0.2, 0)
+            pBtn.MouseButton1Click:Connect(function()
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                end
+            end)
+        end
     end
-end)
+end
+Players.PlayerAdded:Connect(refreshPlayerList) Players.PlayerRemoving:Connect(refreshPlayerList)
+task.spawn(function() while true do refreshPlayerList() task.wait(5) end end)
 
 -- TAB COMBAT V3
-addToggle("Combat V3", "Tự Động Đỡ Đòn (Auto Parry)", "AutoParry", function(state)
-    if state then
-        task.spawn(function()
-            while _G.AutoParry do
-                task.wait(0.08) 
-                for _, monster in pairs(workspace:GetDescendants()) do
-                    if monster:IsA("Model") and monster:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(monster) then
-                        local mHrp = monster:FindFirstChild("HumanoidRootPart")
-                        if mHrp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                            local dist = (player.Character.HumanoidRootPart.Position - mHrp.Position).Magnitude
-                            if dist < 12 then
-                                local blockTool = player.Backpack:FindFirstChild("Block") or player.Character:FindFirstChild("Block") or player.Backpack:FindFirstChildOfClass("Tool")
-                                if blockTool then
-                                    player.Character.Humanoid:EquipTool(blockTool)
-                                    blockTool:Activate()
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
-end)
+addToggle("Combat V3", "Tự Động Đỡ Đòn (Auto Parry)", "AutoParry")
 
 -- TAB VISUAL
 addToggle("Visual", "ESP Người Chơi", "ESP_Player")
-addToggle("Visual", "ESP NPC", "ESP_NPC")
+addToggle("Visual", "ESP NPC / Quái Vật", "ESP_NPC")
 addToggle("Visual", "ESP Items (Tương Tác)", "ESP_Item")
-addToggle("Visual", "Hitbox Always", "HitboxAlways")
-addSlider("Visual", "Kích cỡ Hitbox", "HitboxSize", 2, 50)
+addToggle("Visual", "Bật Mở Rộng Hitbox Gốc", "HitboxAlways")
+addSlider("Visual", "Kích cỡ Hitbox Mở Rộng", "HitboxSize", 2, 50)
 addToggle("Visual", "Sáng Màn Hình (FullBright)", "FullBright")
 
-local lightBackup = {Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient, Brightness = Lighting.Brightness, ClockTime = Lighting.ClockTime}
+-- ==================== TAB FARM (CHUẨN ĐÚNG PHÂN TÁCH YÊU CẦU) ====================
+addToggle("Farm", "Auto Farm Level (Thông minh)", "AutoFarmLevel")
+addToggle("Farm", "Gom NPC / Quái Vật (Chỉ NPC)", "GomNPC")       -- Chỉ Gom NPC, không gom Player
+addToggle("Farm", "Gom Toàn Server (Gom Player) 🆕", "GomPlayer") -- Tính năng mới thêm riêng vào Tab Farm
+addToggle("Farm", "Kill Aura (TP Kill 1s)", "KillAura")
+addToggle("Farm", "Auto Tương Tác (Auto E)", "AutoE")
+addToggle("Farm", "Tự Động Click (Auto Click)", "AutoClick")
 
-local function applyHighlight(model, name, outlineColor, fillColor)
-    if not model or not model:IsA("Instance") then return end
-    local old = model:FindFirstChild(name)
-    if not old then
-        local highlight = Instance.new("Highlight")
-        highlight.Name = name
-        highlight.FillColor = fillColor
-        highlight.FillTransparency = 0.5
-        highlight.OutlineColor = outlineColor 
-        highlight.OutlineTransparency = 0.1
-        highlight.Adornee = model
-        highlight.Parent = model
+-- TAB GAME DEX 🔍
+local dexTab = pages["Game Dex 🔍"]
+local dexSearchInput = Instance.new("TextBox", dexTab)
+dexSearchInput.Size = UDim2.new(1, -6, 0, 30); dexSearchInput.Position = UDim2.new(0, 3, 0, 5)
+dexSearchInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30); dexSearchInput.TextColor3 = Color3.new(1, 1, 1)
+dexSearchInput.PlaceholderText = " Nhập từ khóa..."; dexSearchInput.TextSize = 12
+Instance.new("UICorner", dexSearchInput).CornerRadius = UDim.new(0.15, 0)
+
+local suggestFrame = Instance.new("Frame", dexTab)
+suggestFrame.Size = UDim2.new(1, -6, 0, 32); suggestFrame.Position = UDim2.new(0, 3, 0, 40); suggestFrame.BackgroundTransparency = 1
+local suggestLayout = Instance.new("UIListLayout", suggestFrame); suggestLayout.FillDirection = Enum.FillDirection.Horizontal; suggestLayout.Padding = UDim.new(0, 4)
+
+local dexResultScroll = Instance.new("ScrollingFrame", dexTab)
+dexResultScroll.Size = UDim2.new(1, -6, 0, 135); dexResultScroll.Position = UDim2.new(0, 3, 0, 106)
+dexResultScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); dexResultScroll.ScrollBarThickness = 4
+dexResultScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UICorner", dexResultScroll).CornerRadius = UDim.new(0.05, 0)
+local dexLayout = Instance.new("UIListLayout", dexResultScroll); dexLayout.Padding = UDim.new(0, 4)
+
+local function runDexSearch(keyword)
+    dexSearchInput.Text = keyword
+    for _, btn in pairs(dexResultScroll:GetChildren()) do if btn:IsA("TextButton") then btn:Destroy() end end
+    local matchesFound = 0; local text = keyword:lower()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if (obj.Name:lower():find(text)) and (obj:IsA("BasePart") or obj:IsA("Model")) then
+            if not Players:GetPlayerFromCharacter(obj) and not obj:IsDescendantOf(player.Character) then
+                matchesFound = matchesFound + 1; if matchesFound > 40 then break end
+                local itemBtn = Instance.new("TextButton", dexResultScroll)
+                itemBtn.Size = UDim2.new(1, -8, 0, 26); itemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                itemBtn.TextColor3 = Color3.new(1, 1, 1); itemBtn.Text = "[TP] " .. obj.Name
+                Instance.new("UICorner", itemBtn).CornerRadius = UDim.new(0.2, 0)
+                itemBtn.MouseButton1Click:Connect(function()
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        player.Character.HumanoidRootPart.CFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
+                    end
+                end)
+            end
+        end
     end
 end
 
-local function removeHighlight(model, name)
-    if not model then return end
-    local old = model:FindFirstChild(name)
-    if old then pcall(function() old:Destroy() end) end
+local suggestions = {"Card", "Money", "Coin", "Scrap", "Key"}
+for _, word in pairs(suggestions) do
+    local sBtn = Instance.new("TextButton", suggestFrame)
+    sBtn.Size = UDim2.new(0, 52, 1, 0); sBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 15)
+    sBtn.Text = word; sBtn.TextColor3 = Color3.new(1,1,1); sBtn.Font = Enum.Font.SourceSansBold; sBtn.TextSize = 11
+    Instance.new("UICorner", sBtn).CornerRadius = UDim.new(0.2, 0)
+    sBtn.MouseButton1Click:Connect(function() runDexSearch(word) end)
+end
+
+local dexSearchBtn = Instance.new("TextButton", dexTab)
+dexSearchBtn.Size = UDim2.new(1, -6, 0, 26); dexSearchBtn.Position = UDim2.new(0, 3, 0, 76)
+dexSearchBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); dexSearchBtn.Text = "QUÉT THEO TÊN Ô TRÊN 🔍"
+dexSearchBtn.TextColor3 = Color3.new(1, 1, 1); font = Enum.Font.SourceSansBold; dexSearchBtn.TextSize = 12
+Instance.new("UICorner", dexSearchBtn).CornerRadius = UDim.new(0.15, 0)
+dexSearchBtn.MouseButton1Click:Connect(function() runDexSearch(dexSearchInput.Text) end)
+
+-- TAB UNIVERSAL CLICKER 🎯
+addToggle("Universal Clicker 🎯", "Auto ClickDetector (Click từ xa)", "ClickDetectorSpam")
+addToggle("Universal Clicker 🎯", "Auto TouchInterest (Chạm bệ hệ thống)", "TouchInterestSpam")
+addToggle("Universal Clicker 🎯", "Bật Mở Rộng Hitbox Quái/Người", "UniversalHitbox")
+addSlider("Universal Clicker 🎯", "Kích Cỡ Khổng Lồ Hitbox", "UniversalHitboxSize", 2, 100)
+
+-- TAB POTATO MODE 🥔
+addToggle("Potato Mode 🥔", "Kích Hoạt Potato Siêu Mượt Máy", "PotatoModeEnabled", function(state)
+    if state then
+        settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.AlwaysThrottle
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.CastShadow = false
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v:Destroy()
+            elseif v:IsA("Explosion") or v:IsA("Sparkles") or v:IsA("Fire") then
+                v.Enabled = false
+            end
+        end
+    end
+end)
+
+-- TAB ADMIN CMDS ⚡
+addToggle("Admin Cmds ⚡", "Bật Hệ Thống Lệnh Ẩn (/e Lệnh)", "AdminChatCmds")
+
+-- TAB CHAT SERVER 🌐
+local chatTab = pages["Chat Server 🌐"]
+local chatLogsScroll = Instance.new("ScrollingFrame", chatTab)
+chatLogsScroll.Size = UDim2.new(1, -6, 0, 175); chatLogsScroll.Position = UDim2.new(0, 3, 0, 5)
+chatLogsScroll.BackgroundColor3 = Color3.fromRGB(30, 15, 5); chatLogsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UICorner", chatLogsScroll).CornerRadius = UDim.new(0.05, 0)
+local chatLayout = Instance.new("UIListLayout", chatLogsScroll); chatLayout.Padding = UDim.new(0, 3)
+
+local chatTextBox = Instance.new("TextBox", chatTab)
+chatTextBox.Size = UDim2.new(0, 220, 0, 30); chatTextBox.Position = UDim2.new(0, 3, 0, 185)
+chatTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50); chatTextBox.TextColor3 = Color3.new(1, 1, 1)
+chatTextBox.PlaceholderText = " Nhập tin nhắn..."; chatTextBox.Text = ""
+Instance.new("UICorner", chatTextBox).CornerRadius = UDim.new(0.15, 0)
+
+local sendChatBtn = Instance.new("TextButton", chatTab)
+sendChatBtn.Size = UDim2.new(0, 65, 0, 30); sendChatBtn.Position = UDim2.new(0, 227, 0, 185)
+sendChatBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); sendChatBtn.Text = "GỬI 🚀"; sendChatBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", sendChatBtn).CornerRadius = UDim.new(0.15, 0)
+
+sendChatBtn.MouseButton1Click:Connect(function()
+    if chatTextBox.Text ~= "" then
+        local msgLabel = Instance.new("TextLabel", chatLogsScroll)
+        msgLabel.Size = UDim2.new(1, -8, 0, 20); msgLabel.BackgroundTransparency = 1
+        msgLabel.Text = " 🛑 [" .. player.DisplayName .. "]: " .. chatTextBox.Text
+        msgLabel.TextColor3 = Color3.fromRGB(255, 215, 0); msgLabel.TextXAlignment = Enum.TextXAlignment.Left
+        chatTextBox.Text = ""
+    end
+end)
+
+-- TAB SETTING UI ⚙️
+local settingTab = pages["Setting UI ⚙️"]
+local function createSettingBtn(text, color, callback)
+    local sBtn = Instance.new("TextButton", settingTab)
+    sBtn.Size = UDim2.new(1, -6, 0, 32); sBtn.BackgroundColor3 = color; sBtn.Text = text
+    sBtn.Font = Enum.Font.SourceSansBold; sBtn.TextSize = 13; sBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", sBtn).CornerRadius = UDim.new(0.2, 0)
+    sBtn.MouseButton1Click:Connect(callback)
+end
+createSettingBtn("Đổi Chủ Đề Giao Diện 🌱", Color3.fromRGB(34, 139, 34), function() main.BackgroundColor3 = Color3.fromRGB(20, 50, 20) end)
+createSettingBtn("Xóa Toàn Bộ Script Hub ❌", Color3.fromRGB(180, 40, 40), function() gui:Destroy() end)
+
+
+-- ==================== CORE LOGIC HOẠT ĐỘNG NGẦM (CHỈNH SỬA CHUẨN XÁC) ====================
+
+local function createESP(obj, color, espKey, nameText)
+    if obj:FindFirstChild("HuyESP") then return end
+    local box = Instance.new("Highlight")
+    box.Name = "HuyESP"; box.FillColor = color; box.OutlineColor = Color3.new(1,1,1)
+    box.FillTransparency = 0.5; box.OutlineTransparency = 0; box.Parent = obj
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "HuyTag"; billboard.Size = UDim2.new(0, 200, 0, 50); billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0); billboard.Parent = obj
+    
+    local label = Instance.new("TextLabel", billboard)
+    label.Size = UDim2.new(1, 0, 1, 0); label.BackgroundTransparency = 1
+    label.Text = nameText; label.TextColor3 = color; label.Font = Enum.Font.SourceSansBold; label.TextSize = 14
+
+    task.spawn(function()
+        while obj and obj.Parent and _G[espKey] do task.wait(0.5) end
+        box:Destroy(); billboard:Destroy()
+    end)
 end
 
 RunService.RenderStepped:Connect(function()
     if _G.SpeedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
         player.Character.Humanoid.WalkSpeed = _G.Speed
     end
+    if _G.FullBright then Lighting.Ambient = Color3.new(1,1,1); Lighting.OutdoorAmbient = Color3.new(1,1,1) end
+end)
 
-    if _G.FullBright then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        Lighting.Brightness = 3
-        Lighting.ClockTime = 12
-    else
-        Lighting.Ambient = lightBackup.Ambient
-        Lighting.OutdoorAmbient = lightBackup.OutdoorAmbient
-        Lighting.Brightness = lightBackup.Brightness
-        Lighting.ClockTime = lightBackup.ClockTime
+-- VÒNG LẶP CHÍNH TẦN SUẤT 50MS XỬ LÝ ĐỘC LẬP TỪNG TÍNH NĂNG
+task.spawn(function()
+    while true do
+        task.wait(0.05)
+        
+        local myChar = player.Character
+        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        
+        if myRoot then
+            local targetCFrame = myRoot.CFrame * CFrame.new(0, 0, -5) -- Tọa độ ép dính trước mặt
+
+            -- 1. TÍNH NĂNG MỚI: GOM PLAYER (CHỈ HÚT NGƯỜI CHƠI KHÁC TRONG SERVER)
+            if _G.GomPlayer then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local pRoot = p.Character.HumanoidRootPart
+                        pRoot.Velocity = Vector3.new(0,0,0) -- Khóa kháng vật lý
+                        pRoot.CFrame = targetCFrame
+                    end
+                end
+            end
+
+            -- 2. TÍNH NĂNG CŨ: GOM NPC / QUÁI VẬT (CHỈ QUÉT NPC, TUYỆT ĐỐI KHÔNG LIÊN QUAN ĐẾN PLAYER)
+            if _G.GomNPC then
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
+                        local nRoot = obj:FindFirstChild("HumanoidRootPart")
+                        if nRoot then
+                            nRoot.Velocity = Vector3.new(0,0,0)
+                            nRoot.CFrame = targetCFrame
+                        end
+                    end
+                end
+            end
+
+            -- 3. AUTO FARM LEVEL VÀ TP TẤN CÔNG ĐI KÈM
+            if _G.AutoFarmLevel or _G.KillAura then
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
+                        local monsterRoot = obj:FindFirstChild("HumanoidRootPart")
+                        local monsterHum = obj:FindFirstChildOfClass("Humanoid")
+                        
+                        if monsterRoot and monsterHum and monsterHum.Health > 0 then
+                            myRoot.CFrame = monsterRoot.CFrame * CFrame.new(0, 0, 3)
+                            VirtualUser:CaptureController()
+                            VirtualUser:Button1Down(Vector2.new(0,0))
+                            task.wait(0.08)
+                            if not _G.AutoFarmLevel and not _G.KillAura then break end
+                        end
+                    end
+                end
+            end
+        end
+
+        if _G.AutoClick then
+            VirtualUser:CaptureController()
+            VirtualUser:Button1Down(Vector2.new(0,0))
+        end
+
+        if _G.AutoE then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    fireproximityprompt(obj, 1)
+                end
+            end
+        end
     end
 end)
 
+-- VÒNG LẶP VISUAL
 task.spawn(function()
     while true do
-        task.wait(0.4)
+        task.wait(1)
         if _G.ESP_Player then
             for _, p in pairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then applyHighlight(p.Character, "Hub_PlayerESP", Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 170, 255)) end
+                if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    createESP(p.Character, Color3.fromRGB(0, 255, 255), "ESP_Player", p.DisplayName)
+                end
             end
-        else
-            for _, p in pairs(Players:GetPlayers()) do if p.Character then removeHighlight(p.Character, "Hub_PlayerESP") end end
         end
-
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
-                local isRealPlayer = false
-                for _, p in pairs(Players:GetPlayers()) do if p.Character == obj then isRealPlayer = true break end end
-                if not isRealPlayer then
-                    if _G.ESP_NPC then applyHighlight(obj, "Hub_NPCESP", Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 50, 50))
-                    else removeHighlight(obj, "Hub_NPCESP") end
+        if _G.ESP_NPC then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= player.Character then
+                    createESP(obj, Color3.fromRGB(255, 0, 0), "ESP_NPC", "⚠️ Monster / NPC")
                 end
             end
-
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
-                local hrp = obj.HumanoidRootPart
-                if _G.HitboxAlways then
-                    hrp.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                    hrp.Transparency = 0.75
-                    hrp.Color = Color3.fromRGB(0, 255, 0)
-                    hrp.CanCollide = false
-                else
-                    hrp.Size = Vector3.new(2, 2, 1)
-                    hrp.Transparency = 1
+        end
+        if _G.ESP_Item then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Parent and obj.Parent:IsA("BasePart") then
+                    createESP(obj.Parent, Color3.fromRGB(0, 255, 0), "ESP_Item", "💎 Item Tương Tác")
                 end
             end
-
-            if _G.ESP_Item and (obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector")) then
-                local parent = obj.Parent
-                if parent and (parent:IsA("BasePart") or parent:IsA("Model")) then applyHighlight(parent, "Hub_ItemESP", Color3.fromRGB(255, 255, 0), Color3.fromRGB(0, 255, 0)) end
-            elseif not _G.ESP_Item and (obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector")) then
-                if obj.Parent then removeHighlight(obj.Parent, "Hub_ItemESP") end
+        end
+        if _G.HitboxAlways or _G.UniversalHitbox then
+            local size = _G.HitboxAlways and _G.HitboxSize or _G.UniversalHitboxSize
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= player.Character then
+                    local root = obj:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        root.Size = Vector3.new(size, size, size)
+                        root.Transparency = 0.6; root.CanCollide = false
+                    end
+                end
             end
         end
     end
 end)
 
--- TAB FARM
-addToggle("Farm", "Auto Farm Level (Thông minh)", "AutoFarmLevel")
-addToggle("Farm", "Gom Quái Lại 1 Điểm (Magnet)", "BringMonsters", function(state)
-    if state then
-        task.spawn(function()
-            while _G.BringMonsters do
-                task.wait(0.2)
-                pcall(function()
-                    local myHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                    if myHrp then
-                        for _, v in pairs(workspace:GetDescendants()) do
-                            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v ~= player.Character then
-                                if (v.HumanoidRootPart.Position - myHrp.Position).Magnitude < 150 then
-                                    v.HumanoidRootPart.CFrame = myHrp.CFrame * CFrame.new(0, 0, -5)
-                                    v.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                                end
-                            end
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
-
-addToggle("Farm", "Tự Động Tung Chiêu (Auto Skill Z,X,C)", "AutoSkill", function(state)
-    if state then
-        task.spawn(function()
-            local VirtualInputManager = game:GetService("VirtualInputManager")
-            while _G.AutoSkill do
-                task.wait(1)
-                if player.Character and player.Character:FindFirstChildOfClass("Tool") then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game) task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.X, false, game) task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, game)
-                end
-            end
-        end)
-    end
-end)
-
-local function getWeakestTarget()
-    local myChar = player.Character if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
-    local weakest = nil local lowestHealth = math.huge
-    for _, otherPlayer in pairs(Players:GetPlayers()) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local char = otherPlayer.Character local hum = char:FindFirstChildOfClass("Humanoid") local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hum and hrp and hum.Health > 0 and hum.Health < lowestHealth then lowestHealth = hum.Health weakest = hrp end
-        end
-    end
-    return weakest
-end
-
-addToggle("Farm", "Kill Aura (TP Kill 1s)", "KillAura", function(state)
-    if state then
-        task.spawn(function()
-            while _G.KillAura do
-                task.wait(0.1)
-                local myChar = player.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    local targetHrp = getWeakestTarget()
-                    if targetHrp and targetHrp.Parent then
-                        local tool = myChar:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                        if tool and tool.Parent == player.Backpack then myChar.Humanoid:EquipTool(tool) end
-                        myChar.HumanoidRootPart.CFrame = targetHrp.CFrame * CFrame.new(0, 0, 2)
-                        if tool then tool:Activate() end
-                    end
-                end
-            end
-        end)
-    end
-end)
-
-addToggle("Farm", "Auto Tương Tác (Auto E)", "AutoE", function(state)
-    if state then
-        task.spawn(function()
-            while _G.AutoE do
-                task.wait(0.2)
-                for _, prompt in pairs(workspace:GetDescendants()) do
-                    if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt, 1) end
-                end
-            end
-        end)
-    end
-end)
-
-addToggle("Farm", "Tự Động Click (Auto Click)", "AutoClick", function(state)
-    if state then
-        task.spawn(function()
-            while _G.AutoClick do
-                task.wait(0.02)
-                pcall(function()
-                    local char = player.Character
-                    if char and char:FindFirstChildOfClass("Tool") then char:FindFirstChildOfClass("Tool"):Activate() end
-                end)
-            end
-        end)
-    end
-end)
-
-addToggle("Farm", "Teleport To Items", "TpToItems", function(state)
-    if state then
-        task.spawn(function()
-            while _G.TpToItems do
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    for _, item in pairs(workspace:GetDescendants()) do
-                        if item:IsA("ProximityPrompt") and item.Parent and item.Parent:IsA("BasePart") then
-                            char.HumanoidRootPart.CFrame = item.Parent.CFrame * CFrame.new(0, 2, 0)
-                            task.wait(0.3) fireproximityprompt(item, 1)
-                        end
-                    end
-                end
-                task.wait(0.5)
-            end
-        end)
-    end
-end)
-
-addToggle("Farm", "Tự Trang Bị Vũ Khí", "AutoEquip", function(state)
-    if state then
-        task.spawn(function()
-            while _G.AutoEquip do
-                task.wait(0.5)
-                local char = player.Character
-                if char and char:FindFirstChild("Humanoid") and not char:FindFirstChildOfClass("Tool") then
-                    local targetTool = player.Backpack:FindFirstChildOfClass("Tool")
-                    if targetTool then char.Humanoid:EquipTool(targetTool) end
-                end
-            end
-        end)
-    end
-end)
-
-
--- ==================== TAB CHAT SERVER MƯỢT MÀ TỪ V4.4.5 ====================
-local chatTab = pages["Chat Server 🌐"]
-local chatDisplay = Instance.new("ScrollingFrame", chatTab)
-chatDisplay.Size = UDim2.new(1, -6, 0, 165)
-chatDisplay.Position = UDim2.new(0, 3, 0, 5)
-chatDisplay.BackgroundColor3 = Color3.fromRGB(45, 25, 10)
-chatDisplay.ScrollBarThickness = 4
-chatDisplay.AutomaticCanvasSize = Enum.AutomaticSize.Y
-Instance.new("UICorner", chatDisplay).CornerRadius = UDim.new(0.05, 0)
-
-local chatLayout = Instance.new("UIListLayout", chatDisplay)
-chatLayout.Padding = UDim.new(0, 4)
-
-local chatInput = Instance.new("TextBox", chatTab)
-chatInput.Size = UDim2.new(0, 195, 0, 32)
-chatInput.Position = UDim2.new(0, 3, 0, 178)
-chatInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-chatInput.TextColor3 = Color3.new(1, 1, 1)
-chatInput.Text = ""
-chatInput.PlaceholderText = " Nhập tin nhắn HuyHub..."
-chatInput.TextSize = 12
-chatInput.Font = Enum.Font.SourceSans
-Instance.new("UICorner", chatInput).CornerRadius = UDim.new(0.15, 0)
-
-local sendBtn = Instance.new("TextButton", chatTab)
-sendBtn.Size = UDim2.new(0, 60, 0, 32)
-sendBtn.Position = UDim2.new(0, 202, 0, 178)
-sendBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-sendBtn.Text = "GỬI 🚀"
-sendBtn.TextColor3 = Color3.new(1, 1, 1)
-sendBtn.Font = Enum.Font.SourceSansBold
-Instance.new("UICorner", sendBtn).CornerRadius = UDim.new(0.15, 0)
-
-local NEW_DATABASE_URL = "https://huyhub-global-chat-default-rtdb.firebaseio.com/messages.json"
-local trackingMessages = {}
-
-local function displayMessage(sender, msg)
-    local msgKey = sender .. ":" .. msg
-    if trackingMessages[msgKey] and sender ~= player.Name then return end
-    trackingMessages[msgKey] = true
-
-    local lbl = Instance.new("TextLabel", chatDisplay)
-    lbl.Size = UDim2.new(1, -10, 0, 24)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = " 👤 [" .. sender .. "]: " .. msg
-    lbl.TextColor3 = (sender == player.Name) and Color3.fromRGB(0, 255, 120) or Color3.fromRGB(240, 240, 240)
-    lbl.Font = Enum.Font.SourceSansBold
-    lbl.TextSize = 13
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.TextWrapped = true
-    
-    task.defer(function() chatDisplay.CanvasPosition = Vector2.new(0, chatDisplay.AbsoluteCanvasSize.Y + 50) end)
-end
-
-local function handleSendChat()
-    local text = chatInput.Text
-    if text:gsub(" ", "") == "" then return end
-    chatInput.Text = ""
-    
-    displayMessage(player.Name, text)
-    
-    task.spawn(function()
-        local data = {sender = player.Name, message = text, time = os.time()}
-        pcall(function() HttpService:PostAsync(NEW_DATABASE_URL, HttpService:JSONEncode(data)) end)
-    end)
-end
-
-sendBtn.MouseButton1Click:Connect(handleSendChat)
-chatInput.FocusLost:Connect(function(enterPressed) if enterPressed then handleSendChat() end end)
-
+-- Auto nhặt đồ xa
 task.spawn(function()
     while true do
-        pcall(function()
-            local response = HttpService:GetAsync(NEW_DATABASE_URL)
-            if response and response ~= "null" then
-                local allChats = HttpService:JSONDecode(response)
-                if allChats then
-                    for _, chatData in pairs(allChats) do
-                        if chatData.sender and chatData.message and chatData.sender ~= player.Name then
-                            displayMessage(chatData.sender, chatData.message)
-                        end
-                    end
+        if _G.TpToItems and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("ProximityPrompt") and item.Parent and item.Parent:IsA("BasePart") then
+                    player.Character.HumanoidRootPart.CFrame = item.Parent.CFrame * CFrame.new(0, 2, 0)
+                    task.wait(0.2); fireproximityprompt(item, 1)
                 end
             end
-        end)
-        task.wait(1.2)
+        end
+        task.wait(0.5)
     end
 end)
 
--- TAB SETTING UI
-addToggle("Setting UI ⚙️", "Chế Độ Streamer (Ẩn Tên)", "StreamerMode", function(state)
-    if state then title.Text = "STREAMER MODE" else title.Text = "HUY SCRIPT HUB V4.4.6" end
-end)
-addToggle("Setting UI ⚙️", "FPS Booster", "FPSBooster", function(state)
-    if state then
-        Lighting.GlobalShadows = false
-        for _, v in pairs(game:GetDescendants()) do if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end end
-    end
-end)
-
--- MẶC ĐỊNH CHỌN TAB MAIN
+-- Mặc định mở tab Main
 task.spawn(function()
     task.wait(0.1)
     for tName, pFrame in pairs(pages) do pFrame.Visible = (tName == "Main 🏠") end
-    for _, b in pairs(tabButtons) do 
-        if b.Text == "Main 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-        else b.BackgroundColor3 = Color3.fromRGB(80, 80, 80) end
-    end
+    for _, b in pairs(tabButtons) do if b.Text == "Main 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
 end)
 
-notify("HUY SCRIPT HUB V4.4.6", "Đã khôi phục thành công toàn bộ tính năng hack!")
+notify("HUY SCRIPT HUB V4.5.8", "Đã phân tách thành công: Gom NPC riêng biệt và thêm nút mới Gom Player vào tab Farm!")

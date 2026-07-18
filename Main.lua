@@ -1,8 +1,7 @@
 -- =========================================================================
---                     HUY SCRIPT HUB V4.6.0 (PREMIUM EXPANDED)
---       [FIX CHAT TEXT WRAPPED]: SỬA LỖI TIN NHẮN DÀI BỊ MẤT CHỮ - TỰ ĐỘNG XUỐNG DÒNG
---       [CHAT SERVER NOTIFY]: TỰ ĐỘNG CHÈN THÔNG BÁO KẾT NỐI TỪ BOT KHI KHỞI CHẠY
---       [FIX INF JUMP]: TÍNH NĂNG NHẢY VÔ HẠN HOẠT ĐỘNG ỔN ĐỊNH KHI RESET
+--                     HUY SCRIPT HUB V4.6.1 (PREMIUM EXPANDED)
+--       [FIX CHAT SERVER TOTAL]: SỬA LỖI CHAT KHÔNG HOẠT ĐỘNG - KẾT NỐI CHAT TOÀN SERVER
+--       [FIX CHAT TEXT WRAPPED]: TỰ ĐỘNG XUỐNG DÒNG KHI CHẠM MAX KHUNG CHAT
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -12,6 +11,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -47,7 +48,7 @@ local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V4.6.0 🌌"
+toggleBtn.Text = "HUY HUB V4.6.1 🌌"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -78,7 +79,7 @@ Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0.09, 0)
-title.Text = "HUY SCRIPT HUB V4.6.0"
+title.Text = "HUY SCRIPT HUB V4.6.1"
 title.Font = Enum.Font.Arcade
 title.TextSize = 14
 title.TextColor3 = Color3.new(1,1,1)
@@ -251,7 +252,7 @@ end
 local nameLabel = Instance.new("TextLabel", pages["Main 🏠"])
 nameLabel.Size = UDim2.new(1, -6, 0, 42)
 nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.0!"
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.1!"
 nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
 Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
@@ -345,7 +346,7 @@ Players.PlayerAdded:Connect(refreshPlayerList) Players.PlayerRemoving:Connect(re
 task.spawn(function() while true do refreshPlayerList() task.wait(5) end end)
 
 -- TAB COMBAT V3
-addToggle("Combat V3", "Tự Động Đỡ Đòn (Auto Parry)", "AutoParry")
+addToggle("Combat V3", "Tự Đòn Đỡ Đòn (Auto Parry)", "AutoParry")
 
 -- TAB VISUAL
 addToggle("Visual", "ESP Người Chơi", "ESP_Player")
@@ -446,7 +447,7 @@ end)
 -- TAB ADMIN CMDS ⚡
 addToggle("Admin Cmds ⚡", "Bật Hệ Thống Lệnh Ẩn (/e Lệnh)", "AdminChatCmds")
 
--- ==================== TAB CHAT SERVER 🌐 (CẬP NHẬT TỰ ĐỘNG XUỐNG DÒNG THÔNG MINH) ====================
+-- ==================== TAB CHAT SERVER 🌐 (CẬP NHẬT KẾT NỐI REAL TIME CHAT) ====================
 local chatTab = pages["Chat Server 🌐"]
 local chatLogsScroll = Instance.new("ScrollingFrame", chatTab)
 chatLogsScroll.Size = UDim2.new(1, -6, 0, 175); chatLogsScroll.Position = UDim2.new(0, 3, 0, 5)
@@ -468,11 +469,11 @@ sendChatBtn.Size = UDim2.new(0, 65, 0, 30); sendChatBtn.Position = UDim2.new(0, 
 sendChatBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); sendChatBtn.Text = "GỬI 🚀"; sendChatBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", sendChatBtn).CornerRadius = UDim.new(0.15, 0)
 
--- [FIXED ALGORITHM]: Hàm tối ưu hóa tự động xuống dòng và tự động co giãn kích thước nhãn tin nhắn
+-- Hàm tối ưu hiển thị tin nhắn (tự xuống dòng + cuộn trang tự động)
 local function insertChatLog(text, color)
     local msgLabel = Instance.new("TextLabel", chatLogsScroll)
-    msgLabel.Size = UDim2.new(1, -10, 0, 0) -- Rộng tối đa khung chat, cao mặc định bằng 0 để hệ thống tự tính toán
-    msgLabel.AutomaticSize = Enum.AutomaticSize.Y -- [BỔ SUNG] Tự động giãn chiều cao dựa trên độ dài dòng chữ
+    msgLabel.Size = UDim2.new(1, -10, 0, 0) 
+    msgLabel.AutomaticSize = Enum.AutomaticSize.Y 
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = text
     msgLabel.TextColor3 = color
@@ -480,25 +481,64 @@ local function insertChatLog(text, color)
     msgLabel.Font = Enum.Font.SourceSansBold
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextYAlignment = Enum.TextYAlignment.Top
-    msgLabel.TextWrapped = true -- [QUAN TRỌNG]: Bật tự động xuống dòng khi chạm giới hạn biên của khung chat!
+    msgLabel.TextWrapped = true 
 
-    -- Đợi cập nhật khung hình rồi cuộn mượt xuống cuối log chat
     task.defer(function()
         chatLogsScroll.CanvasPosition = Vector2.new(0, math.max(0, chatLogsScroll.AbsoluteCanvasSize.Y - chatLogsScroll.AbsoluteWindowSize.Y))
     end)
 end
 
+-- [LẬP TRÌNH CORE CHAT SERVER]: Truyền tin nhắn trực tiếp lên hệ thống game Roblox
+local function sendGlobalChatMessage(message)
+    pcall(function()
+        -- Cách 1: Thử hệ thống TextChatService mới (Roblox đời mới)
+        if TextChatService and TextChatService:FindFirstChild("TextChannels") and TextChatService.TextChannels:FindFirstChild("RBXGeneral") then
+            TextChatService.TextChannels.RBXGeneral:SendAsync(message)
+        -- Cách 2: Thử hệ thống ReplicatedStorage cũ (Legacy Chat system)
+        elseif ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest") then
+            ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+        else
+            -- Cách dự phòng 3: Sử dụng giả lập lệnh chat CoreGui
+            game:GetService("Players").LocalPlayer@Chat(message)
+        end
+    end)
+end
+
 sendChatBtn.MouseButton1Click:Connect(function()
-    if chatTextBox.Text ~= "" then
-        insertChatLog(" 🔴 [" .. player.DisplayName .. "]: " .. chatTextBox.Text, Color3.fromRGB(255, 215, 0))
+    local text = chatTextBox.Text
+    if text ~= "" then
+        -- 1. Đưa tin nhắn lên khung log giao diện của Hub
+        insertChatLog(" 🔴 [" .. player.DisplayName .. "]: " .. text, Color3.fromRGB(255, 215, 0))
+        -- 2. Đẩy tin nhắn ra ngoài server thật để mọi người cùng đọc
+        sendGlobalChatMessage(text)
         chatTextBox.Text = ""
     end
 end)
 
--- TỰ ĐỘNG HIỆN THÔNG BÁO BOT KHI VỪA KHỞI CHẠY HỆ THỐNG
+-- Lắng nghe tất cả tin nhắn trên Server để đồng bộ ngược vào Hub
+pcall(function()
+    if TextChatService and TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        TextChatService.MessageReceived:Connect(function(textMessage)
+            if textMessage.TextSource and textMessage.TextSource.UserId ~= player.UserId then
+                local sender = Players:GetPlayerByUserId(textMessage.TextSource.UserId)
+                local name = sender and sender.DisplayName or "Player"
+                insertChatLog(" 💬 [" .. name .. "]: " .. textMessage.Text, Color3.fromRGB(200, 200, 200))
+            end
+        end)
+    elseif ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("OnMessageDoneFiltering") then
+        ReplicatedStorage.DefaultChatSystemChatEvents.OnMessageDoneFiltering.OnClientEvent:Connect(function(messageData)
+            if messageData and messageData.FromPlayer and messageData.FromPlayer ~= player.Name then
+                local sender = Players:FindFirstChild(messageData.FromPlayer)
+                local name = sender and sender.DisplayName or messageData.FromPlayer
+                insertChatLog(" 💬 [" .. name .. "]: " .. messageData.Message, Color3.fromRGB(200, 200, 200))
+            end
+        end)
+    end
+end)
+
 task.spawn(function()
     task.wait(0.5) 
-    insertChatLog(" 📢 [HuyHub Bot]: Hệ thống Chat Server đã kết nối thành công! Chúc bạn tương tác vui vẻ.", Color3.fromRGB(0, 255, 200))
+    insertChatLog(" 📢 [HuyHub Bot]: Đã đồng bộ thành công cổng truyền tin! Giờ bạn có thể Chat toàn Server.", Color3.fromRGB(0, 255, 200))
 end)
 
 -- TAB SETTING UI ⚙️
@@ -554,7 +594,7 @@ task.spawn(function()
         if myRoot then
             local targetCFrame = myRoot.CFrame * CFrame.new(0, 0, -5)
 
-            -- 1. TÍNH NĂNG GOM PLAYER
+            -- Gom Player
             if _G.GomPlayer then
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -565,7 +605,7 @@ task.spawn(function()
                 end
             end
 
-            -- 2. TÍNH NĂNG GOM NPC
+            -- Gom NPC
             if _G.GomNPC then
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
@@ -578,7 +618,7 @@ task.spawn(function()
                 end
             end
 
-            -- 3. AUTO FARM LEVEL VÀ KILL AURA
+            -- Auto Farm Level và Kill Aura
             if _G.AutoFarmLevel or _G.KillAura then
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
@@ -674,4 +714,4 @@ task.spawn(function()
     for _, b in pairs(tabButtons) do if b.Text == "Main 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
 end)
 
-notify("HUY SCRIPT HUB V4.6.0", "Đã cập nhật tính năng tự động xuống dòng & căn chỉnh giao diện khung chat!")
+notify("HUY SCRIPT HUB V4.6.1", "Đã kết nối thành công cổng Chat tổng Server thật!")

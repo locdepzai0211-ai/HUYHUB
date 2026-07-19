@@ -1,6 +1,6 @@
 -- =========================================================================
---               HUY SCRIPT HUB V5.0.0 (FIX GOM PLAYER CHUẨN)
---       [NÂNG CẤP]: SỬA LỖI TÍNH NĂNG GOM NGƯỜI CHƠI TOÀN MÁY CHỦ
+--               HUY SCRIPT HUB V5.0.1 (OPTIMIZED NPC DETECTOR)
+--       [NÂNG CẤP]: PHÂN LOẠI QUÁI VẬT / NPC QUA PROXIMITYPROMPT CHUẨN 100%
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -47,7 +47,7 @@ local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V5.0.0 🚨"
+toggleBtn.Text = "HUY HUB V5.0.1 🚨"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -77,7 +77,7 @@ Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0.09, 0)
-title.Text = "HUY SCRIPT HUB V5.0.0 (FIXED GOM PLAYER)"
+title.Text = "HUY SCRIPT HUB V5.0.1 (NPC SMART SCAN)"
 title.Font = Enum.Font.Arcade
 title.TextSize = 13
 title.TextColor3 = Color3.new(1,1,1)
@@ -315,7 +315,7 @@ end)
 local nameLabel = Instance.new("TextLabel", pages["Trang Chủ 🏠"])
 nameLabel.Size = UDim2.new(1, -6, 0, 42)
 nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v5.0.0!"
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v5.0.1!"
 nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
 Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
@@ -536,33 +536,32 @@ local function createESP(obj, color, nameText)
     end)
 end
 
+-- ==================== THUẬT TOÁN KIỂM TRA QUÁI VẬT SMART NEW ====================
 local function isHostileNPC(model)
     if Players:GetPlayerFromCharacter(model) then return false end
-    local name = model.Name:lower()
     local hum = model:FindFirstChildOfClass("Humanoid")
     if not hum then return false end
     
-    if name:find("monster") or name:find("zombie") or name:find("enemy") or name:find("boss") or name:find("quai") or name:find("scary") or name:find("entity") then 
-        return true 
-    end
-    if model:FindFirstChildOfClass("Tool") or model:FindFirstChild("Damage") or model:FindFirstChild("Attack") then
-        return true
-    end
-    for _, child in pairs(model:GetDescendants()) do
-        local childName = child.Name:lower()
-        if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("NumberValue") or child:IsA("IntValue") then
-            if childName:find("damage") or childName:find("kill") or childName:find("attack") or childName:find("hit") or childName:find("hurt") or childName:find("satthuong") then
-                return true
+    -- LOGIC THEO ĐÚNG Ý ÔNG: Nếu tìm thấy nút tương tác đối thoại trong model hoặc bộ phận cơ thể của nó
+    local hasPrompt = false
+    if model:FindFirstChildOfClass("ProximityPrompt") then
+        hasPrompt = true
+    else
+        for _, child in pairs(model:GetDescendants()) do
+            if child:IsA("ProximityPrompt") then
+                hasPrompt = true
+                break
             end
         end
-        if child:IsA("TouchTransmitter") and (child.Parent.Name:lower():find("kill") or child.Parent.Name:lower():find("hit")) then
-            return true
-        end
     end
-    if hum.MaxHealth > 100 or (hum.MaxHealth > 0 and not model:FindFirstChild("ProximityPrompt")) then
-        return true
+    
+    -- Nếu có nút tương tác -> Kết luận: Dân làng / Thân thiện (Trả về false cho Hostile)
+    if hasPrompt then
+        return false
     end
-    return false
+    
+    -- Ngược lại, nếu không thể tương tác -> Chắc chắn là Quái vật / Boss (Trả về true)
+    return true
 end
 
 -- VÒNG LẶP RENDER GỐC
@@ -578,10 +577,10 @@ RunService.RenderStepped:Connect(function()
     end)
 end)
 
--- ==================== VÒNG LẶP CHÍNH XỬ LÝ GOM PLAYER & QUÁI VẬT ====================
+-- VÒNG LẶP CHÍNH XỬ LÝ GOM PLAYER & QUÁI VẬT
 task.spawn(function()
     while true do
-        task.wait(0.2) -- Tăng tốc quét lên 0.2s để gom mượt hơn
+        task.wait(0.2)
         pcall(function()
             local myChar = player.Character
             local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso"))
@@ -589,7 +588,6 @@ task.spawn(function()
             if myRoot then
                 local frontPosition = myRoot.CFrame * CFrame.new(0, 0, -4)
                 
-                -- LOGIC 1: Gom Quái Vật (NPC)
                 if _G.GomNPC then
                     for _, obj in pairs(workspace:GetDescendants()) do
                         if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
@@ -599,20 +597,16 @@ task.spawn(function()
                     end
                 end
 
-                -- LOGIC 2: Gom Người Chơi Khác (ĐÃ FIX KHÔNG HOẠT ĐỘNG)
                 if _G.GomPlayer then
                     for _, p in pairs(Players:GetPlayers()) do
                         if p ~= player and p.Character then
                             local targetRoot = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Torso")
-                            if targetRoot then 
-                                targetRoot.CFrame = frontPosition 
-                            end
+                            if targetRoot then targetRoot.CFrame = frontPosition end
                         end
                     end
                 end
             end
 
-            -- VẼ ESP NHƯ CŨ
             if _G.ESP_Player then
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= player and p.Character then createESP(p.Character, Color3.fromRGB(0, 255, 255), "👤 " .. p.DisplayName) end
@@ -631,15 +625,18 @@ task.spawn(function()
                             end
                         else
                             if _G.ESP_NPC_Friendly then
-                                createESP(obj, Color3.fromRGB(0, 255, 0), "🟢 Dân Làng / NPC Vô Hại")
+                                createESP(obj, Color3.fromRGB(0, 255, 0), "🟢 Dân Làng / Thân Thiện")
                             else
                                 if obj:FindFirstChild("HuyESP") then obj.HuyESP:Destroy() end
                                 if obj:FindFirstChild("HuyTag") then obj.HuyTag:Destroy() end
                             end
                         end
                     end
-                elseif obj:IsA("ProximityPrompt") and _G.ESP_Item and obj.Parent and obj.Parent:IsA("BasePart") then
-                    createESP(obj.Parent, Color3.fromRGB(255, 255, 0), "💎 Vật Phẩm")
+                elseif obj:IsA("ProximityPrompt") and _G.ESP_Item and obj.Parent and obj.Parent:IsA("BasePart") and not obj.Parent:IsDescendantOf(player.Character) then
+                    -- Chỉ vẽ ESP Item cho các vật phẩm rơi tự do, không vẽ đè lên các NPC có ProximityPrompt
+                    if not obj.Parent:FindFirstAncestorOfClass("Model") or not obj.Parent:FindFirstAncestorOfClass("Model"):FindFirstChildOfClass("Humanoid") then
+                        createESP(obj.Parent, Color3.fromRGB(255, 255, 0), "💎 Vật Phẩm")
+                    end
                 end
             end
 
@@ -678,4 +675,4 @@ task.spawn(function()
     for _, b in pairs(tabButtons) do if b.Text == "Trang Chủ 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
 end)
 
-notify("HUY SCRIPT HUB V5.0.0", "Đã sửa hoàn tất tính năng Gom Player!")
+notify("HUY SCRIPT HUB V5.0.1", "Đã áp dụng quét NPC thông minh bằng ProximityPrompt!")

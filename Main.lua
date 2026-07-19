@@ -1,7 +1,6 @@
 -- =========================================================================
---               HUY SCRIPT HUB V4.6.8 (ULTIMATE R6 SCALE)
---       [SỬA LỖI]: FIX LỌT VOID + FIX ĐI CHẬM NHƯ RÙA KHI THU NHỎ DƯỚI 1.0
---       [BẢO MẬT]: KHÔNG KẾT NỐI MẠNG NGOÀI, CHẠY SIÊU MƯỢT
+--               HUY SCRIPT HUB V5.0.0 (FIX GOM PLAYER CHUẨN)
+--       [NÂNG CẤP]: SỬA LỖI TÍNH NĂNG GOM NGƯỜI CHƠI TOÀN MÁY CHỦ
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -14,7 +13,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Dọn dẹp bản cũ
 local pgui = player:WaitForChild("PlayerGui", 5) or game:GetService("CoreGui")
 if pgui:FindFirstChild("HuyScriptHubV2") then 
     pcall(function() pgui.HuyScriptHubV2:Destroy() end) 
@@ -25,21 +23,31 @@ gui.Name = "HuyScriptHubV2"
 gui.ResetOnSpawn = false
 gui.Parent = pgui
 
--- Khởi tạo biến cấu hình tính năng
-_G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.InfJump = false
-_G.PlayerScale = 1 
-_G.ESP_Player = false; _G.ESP_NPC = false; _G.ESP_Item = false; _G.HitboxAlways = false; _G.HitboxSize = 13; _G.FullBright = false
-_G.AutoE = false; _G.AutoClick = false; _G.KillAura = false; _G.TpToItems = false
-_G.AutoFarmLevel = false; _G.GomPlayer = false; _G.GomNPC = false
-_G.ClickDetectorSpam = false; _G.TouchInterestSpam = false; _G.UniversalHitbox = false; _G.UniversalHitboxSize = 25
-_G.PotatoModeEnabled = false
+local originalLighting = {
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    FogEnd = Lighting.FogEnd,
+    ClockTime = Lighting.ClockTime,
+    GlobalShadows = Lighting.GlobalShadows
+}
 
--- Nút mở Menu chính
+local function setDefaultConfig()
+    _G.SpeedEnabled = false; _G.Speed = 50; _G.Fly = false; _G.Noclip = false; _G.InfJump = false
+    _G.PlayerScale = 1 
+    _G.ESP_Player = false; _G.ESP_NPC_Hostile = false; _G.ESP_NPC_Friendly = false; _G.ESP_Item = false
+    _G.HitboxAlways = false; _G.HitboxSize = 13; _G.FullBright = false
+    _G.AutoE = false; _G.AutoClick = false; _G.KillAuraNPC = false; _G.KillAuraPlayer = false; _G.TpToItems = false
+    _G.AutoFarmLevel = false; _G.GomPlayer = false; _G.GomNPC = false
+    _G.ClickDetectorSpam = false; _G.TouchInterestSpam = false; _G.UniversalHitbox = false; _G.UniversalHitboxSize = 25
+    _G.PotatoModeEnabled = false; _G.DisableTextures = false; _G.DisableEffects = false; _G.ClearDecals = false
+end
+setDefaultConfig()
+
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0, 110, 0, 45)
 toggleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
-toggleBtn.Text = "HUY HUB V4.6.8 🌌"
+toggleBtn.Text = "HUY HUB V5.0.0 🚨"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -52,10 +60,9 @@ toggleGrass.BorderSizePixel = 0
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0.2, 0)
 Instance.new("UICorner", toggleGrass).CornerRadius = UDim.new(0.2, 0)
 
--- Khung nền chính của Menu
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 430, 0, 300) 
-main.Position = UDim2.new(0.5, -215, 0.5, -150)
+main.Size = UDim2.new(0, 430, 0, 315)
+main.Position = UDim2.new(0.5, -215, 0.5, -157)
 main.BackgroundColor3 = Color3.fromRGB(139, 69, 19)
 main.Visible = false
 main.Active = true
@@ -70,7 +77,7 @@ Instance.new("UICorner", mainGrass).CornerRadius = UDim.new(0.3, 0)
 
 local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, 0, 0.09, 0)
-title.Text = "HUY SCRIPT HUB V4.6.8 (MAX SPEED SCALE)"
+title.Text = "HUY SCRIPT HUB V5.0.0 (FIXED GOM PLAYER)"
 title.Font = Enum.Font.Arcade
 title.TextSize = 13
 title.TextColor3 = Color3.new(1,1,1)
@@ -85,7 +92,6 @@ closeBtn.TextColor3 = Color3.new(1,1,1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0.3, 0)
 
--- Hệ thống kéo thả menu
 local function makeDraggable(frame)
     pcall(function()
         local dragging, dragInput, dragStart, startPos
@@ -109,7 +115,6 @@ makeDraggable(toggleBtn) makeDraggable(main)
 local function toggleMenu() main.Visible = not main.Visible end
 toggleBtn.MouseButton1Click:Connect(toggleMenu) closeBtn.MouseButton1Click:Connect(toggleMenu)
 
--- PHÂN CHIA HỆ THỐNG CÁC TAB
 local tabButtonsFrame = Instance.new("ScrollingFrame", main)
 tabButtonsFrame.Size = UDim2.new(0, 115, 0.85, -5)
 tabButtonsFrame.Position = UDim2.new(0, 5, 0.13, 0)
@@ -156,20 +161,21 @@ local function createTab(tabName, isCustomLayout)
     table.insert(tabButtons, btn)
 end
 
--- TẠO CÁC TAB
-createTab("Main 🏠")
-createTab("Player")
-createTab("Teleport to.. 📍", true)
-createTab("Visual")
-createTab("Farm")           
-createTab("Game Dex 🔍", true)       
-createTab("Universal Clicker 🎯")   
-createTab("Potato Mode 🥔")         
-createTab("Setting UI ⚙️")  
+createTab("Trang Chủ 🏠")
+createTab("Nhìn Xuyên 👁️")
+createTab("Chế Độ Máy Yếu 🥔")
+createTab("Người Chơi 🧍")
+createTab("Dịch Chuyển 📍", true)
+createTab("Tự Động Farm 🚜")           
+createTab("Tìm Vật Phẩm 🔍", true)       
+createTab("Click Tự Động 🎯")           
+createTab("Cài Đặt UI ⚙️")  
 
 local function notify(title, text)
     pcall(function() StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 1.5}) end)
 end
+
+local toggleButtonsRegistry = {}
 
 local function addToggle(tabName, text, key, callback)
     local targetPage = pages[tabName] if not targetPage then return end
@@ -179,13 +185,20 @@ local function addToggle(tabName, text, key, callback)
     b.BackgroundColor3 = _G[key] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50,50,50) b.TextColor3 = Color3.new(1,1,1)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0.2, 0)
     
+    local function updateVisuals()
+        b.BackgroundColor3 = _G[key] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50,50,50)
+    end
+
     b.MouseButton1Click:Connect(function()
         _G[key] = not _G[key]
-        b.BackgroundColor3 = _G[key] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50,50,50)
+        updateVisuals()
         notify("Huy Hub", text .. (_G[key] and " 🟢 BẬT" or " 🔴 TẮT"))
         if callback then pcall(callback, _G[key]) end
     end)
+    table.insert(toggleButtonsRegistry, {instance = b, configKey = key, defaultText = text, callbackFunc = callback, refreshVisual = updateVisuals})
 end
+
+local sliderRegistry = {}
 
 local function addSlider(tabName, text, key, min, max, callback)
     local targetPage = pages[tabName] if not targetPage then return end
@@ -220,6 +233,11 @@ local function addSlider(tabName, text, key, min, max, callback)
         if callback then pcall(callback, value) end
     end
 
+    local function refreshVisuals()
+        bar.Size = UDim2.new((_G[key] - min) / (max - min), 0, 1, 0)
+        label.Text = text .. ": " .. tostring(_G[key])
+    end
+
     local sliding = false
     container.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = true updateSlider(input) end
@@ -230,145 +248,101 @@ local function addSlider(tabName, text, key, min, max, callback)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = false end
     end)
+    
+    table.insert(sliderRegistry, {refreshVisual = refreshVisuals})
 end
 
--- TAB MAIN
-local nameLabel = Instance.new("TextLabel", pages["Main 🏠"])
-nameLabel.Size = UDim2.new(1, -6, 0, 42)
-nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v4.6.8!"
-nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
-Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
-
--- TAB PLAYER
-addToggle("Player", "Bật Tốc Độ (Speed)", "SpeedEnabled")
-addSlider("Player", "Điều chỉnh Tốc Độ", "Speed", 16, 250)
-
--- HÀM SCALE GỘP HOÀN CHỈNH V4.6.8: CHỐNG RƠI VOID + BỎ MA SÁT KHI THU NHỎ
-local function changePlayerScale(scaleValue)
-    pcall(function()
-        local char = player.Character
-        if not char then return end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-
-        -- 1. Xử lý cho hệ thống R15
-        if hum.RigType == Enum.HumanoidRigType.R15 then
-            local bodyHeight = hum:FindFirstChild("BodyHeightScale")
-            local bodyWidth = hum:FindFirstChild("BodyWidthScale")
-            local bodyDepth = hum:FindFirstChild("BodyDepthScale")
-            local headScale = hum:FindFirstChild("HeadScale")
-            
-            if bodyHeight then bodyHeight.Value = scaleValue end
-            if bodyWidth then bodyWidth.Value = scaleValue end
-            if bodyDepth then bodyDepth.Value = scaleValue end
-            if headScale then headScale.Value = scaleValue end
-        
-        -- 2. Xử lý tối ưu R6 (Chống lọt void + Xóa ma sát)
-        elseif hum.RigType == Enum.HumanoidRigType.R6 then
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if not rootPart then return end
-
-            local currentCFrame = rootPart.CFrame
-
-            -- Thay đổi kích thước toàn bộ cơ thể
-            for _, part in pairs(char:GetChildren()) do
-                if part:IsA("BasePart") then
-                    if not part:FindFirstChild("OriginalSize") then
-                        local originalSize = Instance.new("Vector3Value", part)
-                        originalSize.Name = "OriginalSize"
-                        originalSize.Value = part.Size
-                    end
-                    
-                    part.Size = part.OriginalSize.Value * scaleValue
-                    
-                    -- THUẬT TOÁN ĐIỀU CHỈNH VA CHẠM & KHỬ MA SÁT:
-                    if part.Name ~= "HumanoidRootPart" then
-                        if scaleValue < 1.0 then
-                            part.CanCollide = true
-                            -- Biến các bộ phận thành vật liệu siêu trơn (Friction = 0) để chạy bốc đầu
-                            part.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0, 0.5, 1, 1)
-                        else
-                            part.CanCollide = false
-                        end
-                    end
-                end
+local function applyFullBright(state)
+    if state then
+        Lighting.Ambient = Color3.new(1,1,1)
+        Lighting.OutdoorAmbient = Color3.new(1,1,1)
+        Lighting.FogEnd = 999999
+        Lighting.ClockTime = 14
+        for _, obj in pairs(Lighting:GetChildren()) do
+            if obj:IsA("Atmosphere") or obj:IsA("Sky") or obj:IsA("Clouds") then
+                obj.Parent = game:GetService("CoreGui")
             end
-
-            -- Đồng bộ khoảng cách các khớp nối Motor6D
-            for _, motor in pairs(char:GetDescendants()) do
-                if motor:IsA("Motor6D") then
-                    if not motor:FindFirstChild("OriginalC0") then
-                        local origC0 = Instance.new("CFrameValue", motor)
-                        origC0.Name = "OriginalC0"
-                        origC0.Value = motor.C0
-                    end
-                    if not motor:FindFirstChild("OriginalC1") then
-                        local origC1 = Instance.new("CFrameValue", motor)
-                        origC1.Name = "OriginalC1"
-                        origC1.Value = motor.C1
-                    end
-                    
-                    motor.C0 = motor.OriginalC0.Value + (motor.OriginalC0.Value.Position * (scaleValue - 1))
-                    motor.C1 = motor.OriginalC1.Value + (motor.OriginalC1.Value.Position * (scaleValue - 1))
-                end
-            end
-            
-            -- Tính toán lại độ cao HipHeight phù hợp
-            if scaleValue < 1.0 then
-                hum.HipHeight = math.max(0, (scaleValue - 1) * 0.5)
-            else
-                hum.HipHeight = (scaleValue - 1) * 2
-            end
-
-            -- Nhấc nhẹ nhân vật để tránh kẹt đất ban đầu
-            rootPart.CFrame = currentCFrame * CFrame.new(0, 1, 0)
         end
-    end)
+    else
+        Lighting.Ambient = originalLighting.Ambient
+        Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+        Lighting.FogEnd = originalLighting.FogEnd
+        Lighting.ClockTime = originalLighting.ClockTime
+        for _, obj in pairs(game:GetService("CoreGui"):GetChildren()) do
+            if obj:IsA("Atmosphere") or obj:IsA("Sky") or obj:IsA("Clouds") then
+                obj.Parent = Lighting
+            end
+        end
+    end
 end
 
--- Vòng lặp khóa cứng va chạm + ép ma sát bằng 0 liên tục ngầm
-task.spawn(function()
-    while true do
-        task.wait(0.1)
+-- TAB NHÌN XUYÊN
+addToggle("Nhìn Xuyên 👁️", "ESP Người Chơi (Cyan 🔵)", "ESP_Player")
+addToggle("Nhìn Xuyên 👁️", "ESP Quái Vật Gây Sát Thương (Đỏ 🔴)", "ESP_NPC_Hostile")
+addToggle("Nhìn Xuyên 👁️", "ESP Thân Thiện / Thể Khác (Xanh Lá 🟢)", "ESP_NPC_Friendly")
+addToggle("Nhìn Xuyên 👁️", "ESP Vật Phẩm Rơi (Vàng 🟡)", "ESP_Item")
+addToggle("Nhìn Xuyên 👁️", "Bật Mở Rộng Hitbox Mặc Định", "HitboxAlways")
+addSlider("Nhìn Xuyên 👁️", "Kích Cỡ Hitbox Mặc Định", "HitboxSize", 2, 50)
+addToggle("Nhìn Xuyên 👁️", "Sáng Màn Hình & Xóa Sương Mù ☀️", "FullBright", applyFullBright)
+
+-- TAB CHẾ ĐỘ MÁY YẾU 🥔
+addToggle("Chế Độ Máy Yếu 🥔", "Kích Hoạt Giảm Đồ Họa Cấp Tốc", "PotatoModeEnabled", function(state)
+    if state then
         pcall(function()
-            if player.Character then
-                for _, part in pairs(player.Character:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        if _G.PlayerScale < 1.0 then
-                            part.CanCollide = true
-                            part.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0, 0.5, 1, 1)
-                        else
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
+            settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.AlwaysThrottle
+            settings().Physics.AllowSleep = true
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            Lighting.GlobalShadows = false
+        end)
+    else
+        pcall(function()
+            settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.DefaultAuto
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+            Lighting.GlobalShadows = originalLighting.GlobalShadows
         end)
     end
 end)
-
--- Thanh kéo chỉnh kích cỡ R6/R15
-addSlider("Player", "Kích Thước Thân Thể 🧍", "PlayerScale", 0.4, 5, function(value)
-    changePlayerScale(value)
+addToggle("Chế Độ Máy Yếu 🥔", "Giảm Chi Tiết Khối (Smooth Plastic)", "DisableTextures", function(state)
+    if state then
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic; v.CastShadow = false
+            elseif v:IsA("MeshPart") then v.TextureID = "" end
+        end
+    end
 end)
 
-player.CharacterAdded:Connect(function(char)
-    task.wait(1.5)
-    if _G.PlayerScale ~= 1 then changePlayerScale(_G.PlayerScale) end
-end)
+-- TAB TRANG CHỦ
+local nameLabel = Instance.new("TextLabel", pages["Trang Chủ 🏠"])
+nameLabel.Size = UDim2.new(1, -6, 0, 42)
+nameLabel.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+nameLabel.Text = "📝 Tác giả: Tran Quang Huy\nChào mừng bạn đến với Huy Script Hub v5.0.0!"
+nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextSize = 12; nameLabel.TextColor3 = Color3.fromRGB(255, 215, 0) 
+Instance.new("UICorner", nameLabel).CornerRadius = UDim.new(0.2, 0)
 
+-- TAB NGƯỜI CHƠI
+addToggle("Người Chơi 🧍", "Bật Tốc Độ Di Chuyển", "SpeedEnabled")
+addSlider("Người Chơi 🧍", "Điều Chỉnh Tốc Độ", "Speed", 16, 250)
+addSlider("Người Chơi 🧍", "Kích Thước Khổng Lồ", "PlayerScale", 0.4, 5, function(value)
+    pcall(function()
+        local char = player.Character local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.RigType == Enum.HumanoidRigType.R15 then
+            if hum:FindFirstChild("BodyHeightScale") then hum.BodyHeightScale.Value = value end
+            if hum:FindFirstChild("BodyWidthScale") then hum.BodyWidthScale.Value = value end
+            if hum:FindFirstChild("BodyDepthScale") then hum.BodyDepthScale.Value = value end
+        end
+    end)
+end)
 
 local flySpeed = 50
 local flyingConnection
-addToggle("Player", "Bay (Fly)", "Fly", function(state)
+addToggle("Người Chơi 🧍", "Kích Hoạt Bay (Fly)", "Fly", function(state)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     local hum = char:WaitForChild("Humanoid")
     if state then
         hum.PlatformStand = true
         local bv = Instance.new("BodyVelocity", hrp)
-        bv.Name = "FlyVelocity"; bv.MaxForce = Vector3.new(9e9, 9e9, 9e9); bv.Velocity = Vector3.new(0,0,0)
+        bv.Name = "FlyVelocity"; bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
         local bg = Instance.new("BodyGyro", hrp)
         bg.Name = "FlyGyro"; bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9); bg.CFrame = hrp.CFrame
         flyingConnection = RunService.RenderStepped:Connect(function()
@@ -385,13 +359,11 @@ addToggle("Player", "Bay (Fly)", "Fly", function(state)
 end)
 
 local noclipConnection
-addToggle("Player", "Xuyên Tường (Noclip)", "Noclip", function(state)
+addToggle("Người Chơi 🧍", "Đi Xuyên Tường (Noclip)", "Noclip", function(state)
     if state then
         noclipConnection = RunService.Stepped:Connect(function()
             if player.Character then
-                for _, child in pairs(player.Character:GetDescendants()) do
-                    if child:IsA("BasePart") then child.CanCollide = false end
-                end
+                for _, child in pairs(player.Character:GetDescendants()) do if child:IsA("BasePart") then child.CanCollide = false end end
             end
         end)
     else
@@ -399,27 +371,30 @@ addToggle("Player", "Xuyên Tường (Noclip)", "Noclip", function(state)
     end
 end)
 
-addToggle("Player", "Nhảy Vô Hạn (Inf Jump)", "InfJump")
+addToggle("Người Chơi 🧍", "Nhảy Vô Hạn (Inf Jump)", "InfJump")
 UserInputService.JumpRequest:Connect(function()
     if _G.InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
         player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
--- TAB TELEPORT TO.. 📍
-local tpTab = pages["Teleport to.. 📍"]
-addToggle("Teleport to.. 📍", "Teleport To Items (Auto)", "TpToItems")
+-- TAB DỊCH CHUYỂN
+local tpTab = pages["Dịch Chuyển 📍"]
+local tpItemBtn = Instance.new("TextButton", tpTab)
+tpItemBtn.Size = UDim2.new(1, -6, 0, 32); tpItemBtn.Position = UDim2.new(0, 3, 0, 5)
+tpItemBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50); tpItemBtn.TextColor3 = Color3.new(1,1,1)
+tpItemBtn.Font = Enum.Font.SourceSansBold; tpItemBtn.TextSize = 13; tpItemBtn.Text = "Tự Động Bay Tới Vật Phẩm: TẮT"
+Instance.new("UICorner", tpItemBtn).CornerRadius = UDim.new(0.2, 0)
 
-local plTitle = Instance.new("TextLabel", tpTab)
-plTitle.Size = UDim2.new(1, -6, 0, 24); plTitle.Position = UDim2.new(0, 3, 0, 40)
-plTitle.BackgroundColor3 = Color3.fromRGB(34, 139, 34); plTitle.Text = "👤 TELEPORT TO PLAYER:"
-plTitle.Font = Enum.Font.SourceSansBold; plTitle.TextSize = 11; plTitle.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", plTitle).CornerRadius = UDim.new(0.2, 0)
+tpItemBtn.MouseButton1Click:Connect(function()
+    _G.TpToItems = not _G.TpToItems
+    tpItemBtn.Text = "Tự Động Bay Tới Vật Phẩm: " .. (_G.TpToItems and "BẬT 🟢" or "TẮT 🔴")
+    tpItemBtn.BackgroundColor3 = _G.TpToItems and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50, 50, 50)
+end)
 
 local plScroll = Instance.new("ScrollingFrame", tpTab)
 plScroll.Size = UDim2.new(1, -6, 0, 175); plScroll.Position = UDim2.new(0, 3, 0, 70)
-plScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); plScroll.ScrollBarThickness = 4
-plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+plScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Instance.new("UICorner", plScroll).CornerRadius = UDim.new(0.05, 0)
 local plLayout = Instance.new("UIListLayout", plScroll); plLayout.Padding = UDim.new(0, 4)
 
@@ -430,8 +405,7 @@ local function refreshPlayerList()
             if p ~= player then
                 local pBtn = Instance.new("TextButton", plScroll)
                 pBtn.Size = UDim2.new(1, -8, 0, 28); pBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                pBtn.TextColor3 = Color3.new(1, 1, 1); pBtn.Font = Enum.Font.SourceSansBold; pBtn.TextSize = 12
-                pBtn.Text = "🏃 " .. p.DisplayName .. " (@" .. p.Name .. ")"
+                pBtn.TextColor3 = Color3.new(1, 1, 1); pBtn.Text = "🏃 " .. p.DisplayName
                 Instance.new("UICorner", pBtn).CornerRadius = UDim.new(0.2, 0)
                 pBtn.MouseButton1Click:Connect(function()
                     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -442,46 +416,32 @@ local function refreshPlayerList()
         end
     end)
 end
-task.spawn(function() while true do refreshPlayerList() task.wait(5) end end)
+task.spawn(function() while true do refreshPlayerList() task.wait(3) end end)
 
--- TAB VISUAL
-addToggle("Visual", "ESP Người Chơi", "ESP_Player")
-addToggle("Visual", "ESP NPC / Quái Vật", "ESP_NPC")
-addToggle("Visual", "ESP Items (Tương Tác)", "ESP_Item")
-addToggle("Visual", "Bật Mở Rộng Hitbox Gốc", "HitboxAlways")
-addSlider("Visual", "Kích cỡ Hitbox Mở Rộng", "HitboxSize", 2, 50)
-addToggle("Visual", "Sáng Màn Hình (FullBright)", "FullBright")
+-- TAB TỰ ĐỘNG FARM
+addToggle("Tự Động Farm 🚜", "Tự Động Cày Cấp (Auto Farm Level)", "AutoFarmLevel")
+addToggle("Tự Động Farm 🚜", "Gom Quái Lại Gần (Trước mặt 4 Studs)", "GomNPC")       
+addToggle("Tự Động Farm 🚜", "Gom Người Chơi Toàn Máy Chủ", "GomPlayer") 
+addToggle("Tự Động Farm 🚜", "Diệt Quái Xung Quanh (Kill Aura NPC)", "KillAuraNPC")
+addToggle("Tự Động Farm 🚜", "Tự Động Nhấn Giữ Nút E", "AutoE")
+addToggle("Tự Động Farm 🚜", "Tự Động Click Đấm Chuột Trái", "AutoClick")
 
--- TAB FARM 
-addToggle("Farm", "Auto Farm Level (Thông minh)", "AutoFarmLevel")
-addToggle("Farm", "Gom NPC / Quái Vật (Chỉ NPC)", "GomNPC")       
-addToggle("Farm", "Gom Toàn Server (Gom Player)", "GomPlayer") 
-addToggle("Farm", "Kill Aura (TP Kill 1s)", "KillAura")
-addToggle("Farm", "Auto Tương Tác (Auto E)", "AutoE")
-addToggle("Farm", "Tự Động Click (Auto Click)", "AutoClick")
-
--- TAB GAME DEX 🔍
-local dexTab = pages["Game Dex 🔍"]
+-- TAB TÌM VẬT PHẨM
+local dexTab = pages["Tìm Vật Phẩm 🔍"]
 local dexSearchInput = Instance.new("TextBox", dexTab)
 dexSearchInput.Size = UDim2.new(1, -6, 0, 30); dexSearchInput.Position = UDim2.new(0, 3, 0, 5)
 dexSearchInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30); dexSearchInput.TextColor3 = Color3.new(1, 1, 1)
-dexSearchInput.PlaceholderText = " Nhập từ khóa..."; dexSearchInput.TextSize = 12
+dexSearchInput.PlaceholderText = " Nhập tên vật phẩm cần quét..."; dexSearchInput.TextSize = 12
 Instance.new("UICorner", dexSearchInput).CornerRadius = UDim.new(0.15, 0)
 
-local suggestFrame = Instance.new("Frame", dexTab)
-suggestFrame.Size = UDim2.new(1, -6, 0, 32); suggestFrame.Position = UDim2.new(0, 3, 0, 40); suggestFrame.BackgroundTransparency = 1
-local suggestLayout = Instance.new("UIListLayout", suggestFrame); suggestLayout.FillDirection = Enum.FillDirection.Horizontal; suggestLayout.Padding = UDim.new(0, 4)
-
 local dexResultScroll = Instance.new("ScrollingFrame", dexTab)
-dexResultScroll.Size = UDim2.new(1, -6, 0, 135); dexResultScroll.Position = UDim2.new(0, 3, 0, 106)
-dexResultScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); dexResultScroll.ScrollBarThickness = 4
-dexResultScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+dexResultScroll.Size = UDim2.new(1, -6, 0, 135); dexResultScroll.Position = UDim2.new(0, 3, 0, 80)
+dexResultScroll.BackgroundColor3 = Color3.fromRGB(45, 25, 10); dexResultScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Instance.new("UICorner", dexResultScroll).CornerRadius = UDim.new(0.05, 0)
 local dexLayout = Instance.new("UIListLayout", dexResultScroll); dexLayout.Padding = UDim.new(0, 4)
 
 local function runDexSearch(keyword)
     pcall(function()
-        dexSearchInput.Text = keyword
         for _, btn in pairs(dexResultScroll:GetChildren()) do if btn:IsA("TextButton") then btn:Destroy() end end
         local matchesFound = 0; local text = keyword:lower()
         for _, obj in pairs(workspace:GetDescendants()) do
@@ -490,7 +450,7 @@ local function runDexSearch(keyword)
                     matchesFound = matchesFound + 1; if matchesFound > 30 then break end
                     local itemBtn = Instance.new("TextButton", dexResultScroll)
                     itemBtn.Size = UDim2.new(1, -8, 0, 26); itemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                    itemBtn.TextColor3 = Color3.new(1, 1, 1); itemBtn.Text = "[TP] " .. obj.Name
+                    itemBtn.TextColor3 = Color3.new(1, 1, 1); itemBtn.Text = "[Bay Tới] " .. obj.Name
                     Instance.new("UICorner", itemBtn).CornerRadius = UDim.new(0.2, 0)
                     itemBtn.MouseButton1Click:Connect(function()
                         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -502,159 +462,192 @@ local function runDexSearch(keyword)
         end
     end)
 end
+dexSearchInput:GetPropertyChangedSignal("Text"):Connect(function() runDexSearch(dexSearchInput.Text) end)
 
-local suggestions = {"Card", "Money", "Coin", "Scrap", "Key"}
-for _, word in pairs(suggestions) do
-    local sBtn = Instance.new("TextButton", suggestFrame)
-    sBtn.Size = UDim2.new(0, 52, 1, 0); sBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 15)
-    sBtn.Text = word; sBtn.TextColor3 = Color3.new(1,1,1); sBtn.Font = Enum.Font.SourceSansBold; sBtn.TextSize = 11
-    Instance.new("UICorner", sBtn).CornerRadius = UDim.new(0.2, 0)
-    sBtn.MouseButton1Click:Connect(function() runDexSearch(word) end)
-end
+-- TAB CLICK TỰ ĐỘNG
+addToggle("Click Tự Động 🎯", "Auto ClickDetector (Click xa)", "ClickDetectorSpam")
+addToggle("Click Tự Động 🎯", "Auto TouchInterest (Chạm bệ)", "TouchInterestSpam")
+addToggle("Click Tự Động 🎯", "Bật Kích Thước Hitbox Siêu Cấp", "UniversalHitbox")
+addSlider("Click Tự Động 🎯", "Cỡ Hitbox Siêu Cấp", "UniversalHitboxSize", 2, 100)
 
-local dexSearchBtn = Instance.new("TextButton", dexTab)
-dexSearchBtn.Size = UDim2.new(1, -6, 0, 26); dexSearchBtn.Position = UDim2.new(0, 3, 0, 76)
-dexSearchBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34); dexSearchBtn.Text = "QUÉT THEO TÊN Ô TRÊN 🔍"
-dexSearchBtn.TextColor3 = Color3.new(1, 1, 1); dexSearchBtn.Font = Enum.Font.SourceSansBold; dexSearchBtn.TextSize = 12
-Instance.new("UICorner", dexSearchBtn).CornerRadius = UDim.new(0.15, 0)
-dexSearchBtn.MouseButton1Click:Connect(function() runDexSearch(dexSearchInput.Text) end)
+-- TAB CÀI ĐẶT UI & NÚT RESET TẤT CẢ
+local settingTab = pages["Cài Đặt UI ⚙️"]
 
--- TAB UNIVERSAL CLICKER
-addToggle("Universal Clicker 🎯", "Auto ClickDetector (Click từ xa)", "ClickDetectorSpam")
-addToggle("Universal Clicker 🎯", "Auto TouchInterest (Chạm bệ hệ thống)", "TouchInterestSpam")
-addToggle("Universal Clicker 🎯", "Bật Mở Rộng Hitbox Quái/Người", "UniversalHitbox")
-addSlider("Universal Clicker 🎯", "Kích Cỡ Khổng Lồ Hitbox", "UniversalHitboxSize", 2, 100)
+local resetAllBtn = Instance.new("TextButton", settingTab)
+resetAllBtn.Size = UDim2.new(1, -6, 0, 32)
+resetAllBtn.BackgroundColor3 = Color3.fromRGB(210, 105, 30)
+resetAllBtn.Text = "🔄 Reset Tất Cả Tính Năng"
+resetAllBtn.Font = Enum.Font.SourceSansBold; resetAllBtn.TextColor3 = Color3.new(1,1,1); resetAllBtn.TextSize = 13
+Instance.new("UICorner", resetAllBtn).CornerRadius = UDim.new(0.2, 0)
 
--- TAB POTATO MODE
-addToggle("Potato Mode 🥔", "Kích Hoạt Potato Siêu Mượt Máy", "PotatoModeEnabled", function(state)
-    if state then
-        pcall(function()
-            settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.AlwaysThrottle
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic; v.CastShadow = false
-                elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy()
-                elseif v:IsA("Explosion") or v:IsA("Sparkles") or v:IsA("Fire") then v.Enabled = false end
-            end
-        end)
+resetAllBtn.MouseButton1Click:Connect(function()
+    setDefaultConfig()
+    applyFullBright(false)
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+            if root then root.Size = Vector3.new(2, 2, 1); root.Transparency = 0; root.CanCollide = true end
+            if obj:FindFirstChild("HuyESP") then obj.HuyESP:Destroy() end
+            if obj:FindFirstChild("HuyTag") then obj.HuyTag:Destroy() end
+        end
     end
+    
+    for _, item in pairs(toggleButtonsRegistry) do item.refreshVisual() end
+    for _, item in pairs(sliderRegistry) do item.refreshVisual() end
+    tpItemBtn.Text = "Tự Động Bay Tới Vật Phẩm: TẮT"; tpItemBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    
+    notify("Huy Hub", "Đã đặt lại toàn bộ tính năng về mặc định!")
 end)
 
--- ==================== CORE LOGIC HOẠT ĐỘNG NGẦM VÀ VISUAL ====================
+local spaceLabel = Instance.new("Frame", settingTab)
+spaceLabel.Size = UDim2.new(1,0,0,5); spaceLabel.BackgroundTransparency = 1
 
-local function createESP(obj, color, espKey, nameText)
+local closeUIAll = Instance.new("TextButton", settingTab)
+closeUIAll.Size = UDim2.new(1, -6, 0, 32); closeUIAll.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+closeUIAll.Text = "Gỡ Bỏ Toàn Bộ Huy Hub ❌"; closeUIAll.Font = Enum.Font.SourceSansBold; closeUIAll.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", closeUIAll).CornerRadius = UDim.new(0.2, 0)
+closeUIAll.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+
+-- ==================== HỆ THỐNG VẼ ESP & SCANNER ====================
+local function createESP(obj, color, nameText)
+    if not obj then return end
+    if obj:FindFirstChild("HuyESP") then
+        obj.HuyESP.FillColor = color
+        if obj:FindFirstChild("HuyTag") and obj.HuyTag:FindFirstChildOfClass("TextLabel") then
+            obj.HuyTag:FindFirstChildOfClass("TextLabel").Text = nameText
+            obj.HuyTag:FindFirstChildOfClass("TextLabel").TextColor3 = color
+        end
+        return
+    end
     pcall(function()
-        if obj:FindFirstChild("HuyESP") then return end
         local box = Instance.new("Highlight")
         box.Name = "HuyESP"; box.FillColor = color; box.OutlineColor = Color3.new(1,1,1)
-        box.FillTransparency = 0.5; box.OutlineTransparency = 0; box.Parent = obj
+        box.FillTransparency = 0.4; box.OutlineTransparency = 0; box.Parent = obj
         
         local billboard = Instance.new("BillboardGui")
-        billboard.Name = "HuyTag"; billboard.Size = UDim2.new(0, 200, 0, 50); billboard.AlwaysOnTop = true
+        billboard.Name = "HuyTag"; billboard.Size = UDim2.new(0, 150, 0, 40); billboard.AlwaysOnTop = true
         billboard.StudsOffset = Vector3.new(0, 3, 0); billboard.Parent = obj
         
         local label = Instance.new("TextLabel", billboard)
         label.Size = UDim2.new(1, 0, 1, 0); label.BackgroundTransparency = 1
         label.Text = nameText; label.TextColor3 = color; label.Font = Enum.Font.SourceSansBold; label.TextSize = 14
-
-        task.spawn(function()
-            while obj and obj.Parent and _G[espKey] do task.wait(0.5) end
-            pcall(function() box:Destroy() billboard:Destroy() end)
-        end)
     end)
 end
 
+local function isHostileNPC(model)
+    if Players:GetPlayerFromCharacter(model) then return false end
+    local name = model.Name:lower()
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    
+    if name:find("monster") or name:find("zombie") or name:find("enemy") or name:find("boss") or name:find("quai") or name:find("scary") or name:find("entity") then 
+        return true 
+    end
+    if model:FindFirstChildOfClass("Tool") or model:FindFirstChild("Damage") or model:FindFirstChild("Attack") then
+        return true
+    end
+    for _, child in pairs(model:GetDescendants()) do
+        local childName = child.Name:lower()
+        if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("ModuleScript") or child:IsA("NumberValue") or child:IsA("IntValue") then
+            if childName:find("damage") or childName:find("kill") or childName:find("attack") or childName:find("hit") or childName:find("hurt") or childName:find("satthuong") then
+                return true
+            end
+        end
+        if child:IsA("TouchTransmitter") and (child.Parent.Name:lower():find("kill") or child.Parent.Name:lower():find("hit")) then
+            return true
+        end
+    end
+    if hum.MaxHealth > 100 or (hum.MaxHealth > 0 and not model:FindFirstChild("ProximityPrompt")) then
+        return true
+    end
+    return false
+end
+
+-- VÒNG LẶP RENDER GỐC
 RunService.RenderStepped:Connect(function()
     pcall(function()
-        if _G.SpeedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = _G.Speed
+        if _G.SpeedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then 
+            player.Character.Humanoid.WalkSpeed = _G.Speed 
         end
-        if _G.FullBright then Lighting.Ambient = Color3.new(1,1,1); Lighting.OutdoorAmbient = Color3.new(1,1,1) end
+        if _G.FullBright then 
+            Lighting.Ambient = Color3.new(1,1,1); Lighting.OutdoorAmbient = Color3.new(1,1,1)
+            Lighting.FogEnd = 999999; Lighting.ClockTime = 14
+        end
     end)
 end)
 
+-- ==================== VÒNG LẶP CHÍNH XỬ LÝ GOM PLAYER & QUÁI VẬT ====================
 task.spawn(function()
     while true do
-        task.wait(0.05)
+        task.wait(0.2) -- Tăng tốc quét lên 0.2s để gom mượt hơn
         pcall(function()
             local myChar = player.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso"))
+            
             if myRoot then
-                local targetCFrame = myRoot.CFrame * CFrame.new(0, 0, -5)
-
-                if _G.GomPlayer then
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            p.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                            p.Character.HumanoidRootPart.CFrame = targetCFrame
-                        end
-                    end
-                end
-
+                local frontPosition = myRoot.CFrame * CFrame.new(0, 0, -4)
+                
+                -- LOGIC 1: Gom Quái Vật (NPC)
                 if _G.GomNPC then
                     for _, obj in pairs(workspace:GetDescendants()) do
                         if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
-                            local nRoot = obj:FindFirstChild("HumanoidRootPart")
-                            if nRoot then nRoot.Velocity = Vector3.new(0,0,0); nRoot.CFrame = targetCFrame end
+                            local targetRoot = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+                            if targetRoot then targetRoot.CFrame = frontPosition end
                         end
                     end
                 end
 
-                if _G.AutoFarmLevel or _G.KillAura then
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= myChar then
-                            local mRoot = obj:FindFirstChild("HumanoidRootPart")
-                            local mHum = obj:FindFirstChildOfClass("Humanoid")
-                            if mRoot and mHum and mHum.Health > 0 then
-                                myRoot.CFrame = mRoot.CFrame * CFrame.new(0, 0, 3)
-                                VirtualUser:CaptureController(); VirtualUser:Button1Down(Vector2.new(0,0))
-                                task.wait(0.08)
-                                if not _G.AutoFarmLevel and not _G.KillAura then break end
+                -- LOGIC 2: Gom Người Chơi Khác (ĐÃ FIX KHÔNG HOẠT ĐỘNG)
+                if _G.GomPlayer then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local targetRoot = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Torso")
+                            if targetRoot then 
+                                targetRoot.CFrame = frontPosition 
                             end
                         end
                     end
                 end
             end
 
-            if _G.AutoClick then VirtualUser:CaptureController(); VirtualUser:Button1Down(Vector2.new(0,0)) end
-            if _G.AutoE then
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then fireproximityprompt(obj, 1) end
-                end
-            end
-        end)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(1)
-        pcall(function()
+            -- VẼ ESP NHƯ CŨ
             if _G.ESP_Player then
                 for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        createESP(p.Character, Color3.fromRGB(0, 255, 255), "ESP_Player", p.DisplayName)
-                    end
+                    if p ~= player and p.Character then createESP(p.Character, Color3.fromRGB(0, 255, 255), "👤 " .. p.DisplayName) end
                 end
             end
-            if _G.ESP_NPC then
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(obj) and obj ~= player.Character then
-                        createESP(obj, Color3.fromRGB(255, 0, 0), "ESP_NPC", "⚠️ Monster")
+            
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= myChar then
+                    if not Players:GetPlayerFromCharacter(obj) then
+                        if isHostileNPC(obj) then
+                            if _G.ESP_NPC_Hostile then
+                                createESP(obj, Color3.fromRGB(255, 0, 0), "⚠️ MONSTER (DANGER)")
+                            else
+                                if obj:FindFirstChild("HuyESP") then obj.HuyESP:Destroy() end
+                                if obj:FindFirstChild("HuyTag") then obj.HuyTag:Destroy() end
+                            end
+                        else
+                            if _G.ESP_NPC_Friendly then
+                                createESP(obj, Color3.fromRGB(0, 255, 0), "🟢 Dân Làng / NPC Vô Hại")
+                            else
+                                if obj:FindFirstChild("HuyESP") then obj.HuyESP:Destroy() end
+                                if obj:FindFirstChild("HuyTag") then obj.HuyTag:Destroy() end
+                            end
+                        end
                     end
+                elseif obj:IsA("ProximityPrompt") and _G.ESP_Item and obj.Parent and obj.Parent:IsA("BasePart") then
+                    createESP(obj.Parent, Color3.fromRGB(255, 255, 0), "💎 Vật Phẩm")
                 end
             end
-            if _G.ESP_Item then
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") and obj.Parent and obj.Parent:IsA("BasePart") then
-                        createESP(obj.Parent, Color3.fromRGB(0, 255, 0), "ESP_Item", "💎 Item")
-                    end
-                end
-            end
+
             if _G.HitboxAlways or _G.UniversalHitbox then
                 local size = _G.HitboxAlways and _G.HitboxSize or _G.UniversalHitboxSize
                 for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= player.Character then
-                        local root = obj:FindFirstChild("HumanoidRootPart")
+                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= myChar then
+                        local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
                         if root then root.Size = Vector3.new(size, size, size); root.Transparency = 0.6; root.CanCollide = false end
                     end
                 end
@@ -663,39 +656,26 @@ task.spawn(function()
     end
 end)
 
+-- VÒNG LẶP PHỤ CHO AUTO CLICK / AUTO E
 task.spawn(function()
     while true do
         pcall(function()
-            if _G.TpToItems and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                for _, item in pairs(workspace:GetDescendants()) do
-                    if item:IsA("ProximityPrompt") and item.Parent and item.Parent:IsA("BasePart") then
-                        player.Character.HumanoidRootPart.CFrame = item.Parent.CFrame * CFrame.new(0, 2, 0)
-                        task.wait(0.2); fireproximityprompt(item, 1)
-                    end
+            local myChar = player.Character; local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso"))
+            if myRoot then
+                if _G.AutoE then
+                    for _, obj in pairs(workspace:GetDescendants()) do if obj:IsA("ProximityPrompt") then fireproximityprompt(obj, 1) end end
                 end
+                if _G.AutoClick then VirtualUser:CaptureController(); VirtualUser:Button1Down(Vector2.new(0,0)) end
             end
         end)
-        task.wait(0.5)
+        task.wait(0.3)
     end
 end)
 
--- Mặc định mở tab Main khi khởi chạy
 task.spawn(function()
     task.wait(0.1)
-    for tName, pFrame in pairs(pages) do pFrame.Visible = (tName == "Main 🏠") end
-    for _, b in pairs(tabButtons) do if b.Text == "Main 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
+    for tName, pFrame in pairs(pages) do pFrame.Visible = (tName == "Trang Chủ 🏠") end
+    for _, b in pairs(tabButtons) do if b.Text == "Trang Chủ 🏠" then b.BackgroundColor3 = Color3.fromRGB(34, 139, 34) end end
 end)
 
--- TAB SETTING UI
-local settingTab = pages["Setting UI ⚙️"]
-local function createSettingBtn(text, color, callback)
-    local sBtn = Instance.new("TextButton", settingTab)
-    sBtn.Size = UDim2.new(1, -6, 0, 32); sBtn.BackgroundColor3 = color; sBtn.Text = text
-    sBtn.Font = Enum.Font.SourceSansBold; sBtn.TextSize = 13; sBtn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", sBtn).CornerRadius = UDim.new(0.2, 0)
-    sBtn.MouseButton1Click:Connect(callback)
-end
-createSettingBtn("Đổi Chủ Đề Giao Diện 🌱", Color3.fromRGB(34, 139, 34), function() main.BackgroundColor3 = Color3.fromRGB(20, 50, 20) end)
-createSettingBtn("Xóa Toàn Bộ Script Hub ❌", Color3.fromRGB(180, 40, 40), function() gui:Destroy() end)
-
-notify("HUY SCRIPT HUB V4.6.8", "Đã gộp hoàn chỉnh hệ thống tối ưu tốc độ thu nhỏ!")
+notify("HUY SCRIPT HUB V5.0.0", "Đã sửa hoàn tất tính năng Gom Player!")
